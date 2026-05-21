@@ -2,6 +2,8 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { Compass, Filter, Sparkles, Layers, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { searchSeasonalAnime } from '@/lib/anilist';
+
+export const runtime = 'edge';
 import { AnimeCard } from '@/components/AnimeCard';
 import { SearchBar } from '@/components/SearchBar';
 import { SeasonalFilterSelector } from '@/components/SeasonalFilterSelector';

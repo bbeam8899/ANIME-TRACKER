@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchAnimeQuick } from '@/lib/anilist';
 
+export const runtime = 'edge';
+
 /**
  * API Route (GET /api/search?q=...)
  * เป็นสะพานเชื่อมให้ Client Component สามารถดึงข้อมูลค้นหาแบบเรียลไทม์ผ่าน Server ได้อย่างรวดเร็ว

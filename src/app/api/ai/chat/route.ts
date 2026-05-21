@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { getTrendingAnime, getSeasonalAnimeList } from '@/lib/anilist';
 
+export const runtime = 'edge';
+
 // อินเทอร์เฟซสำหรับรับข้อความจากไคลเอนต์
 interface ChatMessage {
   role: 'user' | 'model';
