@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Clock, Star, Tv, ChevronRight, RefreshCw, Radio } from 'lucide-react';
 import { AiringScheduleItem } from '@/lib/types';
+import { getAiringSchedule } from '@/lib/anilist';
 
 interface WeeklyScheduleProps {
   scheduleItems: AiringScheduleItem[];
@@ -60,16 +61,8 @@ export function WeeklySchedule({ scheduleItems }: WeeklyScheduleProps) {
       const start = Math.floor(monday.getTime() / 1000);
       const end = Math.floor(sunday.getTime() / 1000);
 
-      const response = await fetch(`/api/schedule?start=${start}&end=${end}`, {
-        cache: 'no-store'
-      });
-
-      if (!response.ok) {
-        throw new Error('API schedule response was not ok');
-      }
-
-      const data = await response.json();
-      if (Array.isArray(data)) {
+      const data = await getAiringSchedule(start, end, 1, 60);
+      if (Array.isArray(data) && data.length > 0) {
         setItems(data);
         setLastUpdateTime(new Date());
       }
@@ -211,7 +204,7 @@ export function WeeklySchedule({ scheduleItems }: WeeklyScheduleProps) {
 
               return (
                 <Link
-                  href={`/anime/${item.media.id}`}
+                  href={`/anime?id=${item.media.id}`}
                   key={item.id}
                   className="group block"
                 >

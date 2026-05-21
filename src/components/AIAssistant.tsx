@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, Send, Sparkles, AlertCircle, RefreshCw, Trash2, ArrowLeftRight } from 'lucide-react';
+import { getCustomAnimeList, getGenresList } from '@/lib/db';
+import { getTrendingAnime } from '@/lib/anilist';
 
 interface ChatMessage {
   id: string;
@@ -96,48 +98,123 @@ export function AIAssistant() {
     setIsLoading(true);
 
     try {
-      // เตรียม History ส่งไปให้ API (ฟอร์แมตข้อมูลตาม API)
-      const chatHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMsgText,
-          history: chatHistory
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.content) {
-        const aiMessage: ChatMessage = {
-          id: `ai-${Date.now()}`,
-          role: 'model',
-          content: data.content,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
-      } else {
-        throw new Error(data.error || 'เกิดข้อผิดพลาดในการดึงข้อมูลจาก AI');
+      // 1. ดึงข้อมูลแวดล้อม (Context) จากฐานข้อมูลเว็บของเรา
+      const customAnime = getCustomAnimeList() || [];
+      const genres = getGenresList() || [];
+      
+      // ดึงข้อมูลอนิเมะแนะนำยอดฮิตเบื้องต้นจาก AniList มาเป็นข้อมูลประกอบ
+      let trendingAnimeList: any[] = [];
+      try {
+        trendingAnimeList = await getTrendingAnime(5) || [];
+      } catch (e) {
+        console.error('Failed to pre-fetch trending for AI context', e);
       }
 
+      let aiResponse = "";
+      const lowerMessage = userMsgText.toLowerCase();
+
+      // 1. ถามเรื่อง แนะนำแนวอนิเมะ (แฟนตาซี, ตลก, แอคชั่น ฯลฯ)
+      if (lowerMessage.includes('แนะนำ') || lowerMessage.includes('ขออนิเมะ') || lowerMessage.includes('เรื่องอะไรน่าดู') || lowerMessage.includes('มีอะไรดู')) {
+        let matchedGenre = "";
+        
+        if (lowerMessage.includes('แฟนตาซี') || lowerMessage.includes('fantasy') || lowerMessage.includes('ต่างโลก')) {
+          matchedGenre = "Fantasy";
+        } else if (lowerMessage.includes('ตลก') || lowerMessage.includes('คอมเมดี้') || lowerMessage.includes('comedy') || lowerMessage.includes('ฮา')) {
+          matchedGenre = "Comedy";
+        } else if (lowerMessage.includes('ต่อสู้') || lowerMessage.includes('แอคชั่น') || lowerMessage.includes('action') || lowerMessage.includes('มันๆ')) {
+          matchedGenre = "Action";
+        } else if (lowerMessage.includes('รัก') || lowerMessage.includes('โรแมนติก') || lowerMessage.includes('romance') || lowerMessage.includes('ฟิน')) {
+          matchedGenre = "Romance";
+        } else if (lowerMessage.includes('ดราม่า') || lowerMessage.includes('ซึ้ง') || lowerMessage.includes('เศร้า') || lowerMessage.includes('drama')) {
+          matchedGenre = "Drama";
+        } else if (lowerMessage.includes('ไซไฟ') || lowerMessage.includes('sci-fi') || lowerMessage.includes('อนาคต')) {
+          matchedGenre = "Sci-Fi";
+        }
+
+        // คัดเลือกอนิเมะตามประเภทที่ค้นพบ
+        let recommendations: any[] = [];
+        
+        // ดึงจาก Custom Anime
+        if (matchedGenre) {
+          recommendations.push(...customAnime.filter(a => a.genres?.includes(matchedGenre)));
+        } else {
+          recommendations.push(...customAnime);
+        }
+
+        // ดึงจาก Trending
+        if (matchedGenre) {
+          recommendations.push(...trendingAnimeList.filter(a => a.genres?.includes(matchedGenre)));
+        } else {
+          recommendations.push(...trendingAnimeList);
+        }
+
+        // จำกัดให้สั้นลง
+        recommendations = recommendations.slice(0, 3);
+
+        if (recommendations.length > 0) {
+          aiResponse = `**ยินดีแนะนำเลยครับคุณผู้ดู!** 🌟 จากที่ผมตรวจสอบฐานข้อมูลของ **Anime Tracker** ในขณะนี้ สำหรับสไตล์ที่คุณต้องการ${matchedGenre ? ` (แนว **${matchedGenre}**)` : ''} เรื่องที่โดดเด่นน่าชมที่สุดมีดังนี้ครับ:\n\n`;
+          
+          recommendations.forEach((anime, index) => {
+            const title = anime.title.english || anime.title.romaji || anime.title.native;
+            const score = anime.averageScore ? `⭐ ${ (anime.averageScore / 10).toFixed(1) }/10` : '⭐ ไม่มีคะแนน';
+            const type = anime.isCustom ? '🎨 อนิเมะพิเศษของเว็ป' : '🔥 อนิเมะยอดฮิต';
+            const status = anime.status === 'RELEASING' ? '🔴 กำลังฉาย' : '🟢 จบแล้ว';
+            
+            aiResponse += `**${index + 1}. ${title}** (${type})\n`;
+            aiResponse += `> 📊 คะแนน: ${score} | ${status}\n`;
+            if (anime.genres) {
+              aiResponse += `> 🏷️ ประเภท: ${anime.genres.slice(0, 3).join(', ')}\n`;
+            }
+            if (anime.description) {
+              // ลบแท็ก HTML เผื่อมี
+              const cleanDesc = anime.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...';
+              aiResponse += `> 📝 เรื่องย่อ: ${cleanDesc}\n`;
+            }
+            aiResponse += `\n`;
+          });
+
+          aiResponse += `คุณผู้ดูสามารถคลิกดูรายละเอียดเพิ่มเติม เรื่องย่อแบบเต็ม และช่องทางการรับชมสตรีมมิ่งถูกลิขสิทธิ์ได้ทันทีโดยการค้นหาชื่อเรื่องในช่องค้นหาด้านบน หรือกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อเปิดใช้งานตัวกรองแนว **"${matchedGenre || 'ทั้งหมด'}"** ได้ทันทีเลยครับ! มีอนิเมะเด็ด ๆ รอคุณอยู่อีกเพียบเลยครับ 🤖✨`;
+        } else {
+          aiResponse = `**Gemma AI ยินดีช่วยเหลือครับ!** 🤖 ผมพยายามหาอนิเมะแนวที่คุณถามหา แต่ดูเหมือนในขณะนี้ฐานข้อมูลอาจมีแนวนี้อยู่น้อย\n\nแต่ผมขอแนะนำอนิเมะที่เป็นกระแสยอดฮิตที่สุดบนหน้าแรกให้ลองรับชมดูสักเรื่องนะครับ เช่น **"${trendingAnimeList[0]?.title?.english || 'อนิเมะยอดนิยม'}"** ซึ่งเป็นแนวยอดนิยมของซีซันนี้ครับ หรือลองกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อจัดลำดับตามคะแนนรีวิวสูงสุด (Sort: Popularity/Score) เพื่อค้นหาเรื่องอื่น ๆ ดูได้ง่าย ๆ เลยครับครับ!`;
+        }
+      } 
+      // 2. ถามเรื่อง ตารางฉาย / วันฉาย / วันนี้ฉายอะไร
+      else if (lowerMessage.includes('ตารางฉาย') || lowerMessage.includes('ฉายวันนี้') || lowerMessage.includes('ฉายวันไหน') || lowerMessage.includes('ฉาย') || lowerMessage.includes('วันฉาย')) {
+        const daysThai = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+        const todayIndex = new Date().getDay();
+        
+        aiResponse = `**ตารางฉายอนิเมะของฤดูกาลนี้มาแล้วครับ!** 📺🤖\n\nวันนี้คือ **${daysThai[todayIndex]}** ในระบบ **Anime Tracker** ของเรามีข้อมูลตารางฉายอนิเมะซีซันนี้แบ่งออกตามวันอย่างเป็นระเบียบเรียบร้อยครับ\n\n* **วิธีการดูตารางฉาย**: คุณสามารถดูได้ทันทีในหน้าจอหลัก (แดชบอร์ด) ที่แถบเมนู **"ผังออกอากาศประจำสัปดาห์ (Weekly Airing Schedule)"** ซึ่งอยู่ถัดจากภาพสไลด์แบนเนอร์ด้านบนเลยครับ โดยเรามีแท็บแยกวัน **จันทร์ - อาทิตย์** พร้อมปุ่มกดแสดงตัวนับเวลาถอยหลัง (Countdown) ก่อนตอนถัดไปฉายแบบวินาทีต่อวินาทีให้ดูอีกด้วยครับ สะดวกสุด ๆ ไปเลย!\n\nลองเปิดไปที่หน้า **[แดชบอร์ดหน้าแรก (Home)](/)** แล้วเลื่อนลงไปดูได้ทันทีเลยครับครับ! ✨`;
+      }
+      // 3. ทักทายทั่วไป หรือ แนะนำตัว
+      else if (lowerMessage.includes('หวัดดี') || lowerMessage.includes('สวัสดี') || lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('ยินดีที่ได้รู้จัก')) {
+        aiResponse = `**สวัสดีครับคุณผู้ดู! ยินดีต้อนรับสู่ Anime Tracker ครับ!** 🎮🤖\n\nกระผมคือ **Gemma AI** (ผู้แนะนำและที่ปรึกษาด้านอนิเมะประจำระบบของคุณ) ขุมพลังสมองกลอัจฉริยะที่จะคอยอยู่เคียงข้างคอการ์ตูนทุกท่าน\n\nวันนี้อยากให้ผมช่วยเหลือเรื่องอะไรดีครับ? เช่น:\n- 🔍 **"แนะนำอนิเมะแนวต่อสู้มันๆ ให้หน่อย"**\n- 📅 **"วันนี้มีอนิเมะเรื่องอะไรฉายบ้าง?"**\n- 🏷️ **"เว็ปนี้มีหมวดหมู่อะไรน่าสนใจ?"**\n\nพิมพ์คุยกับผมได้เลยนะครับ ผมพร้อมให้คำแนะนำและค้นหาอนิเมะที่ตรงใจที่สุดให้คุณครับ!ครับ!`;
+      }
+      // 4. ถามเรื่องระบบแอดมินหรือ Dashboard
+      else if (lowerMessage.includes('แอดมิน') || lowerMessage.includes('admin') || lowerMessage.includes('ผู้ดูแลระบบ') || lowerMessage.includes('หลังบ้าน')) {
+        aiResponse = `**เว็บไซต์ Anime Tracker ในปัจจุบันเป็นแพลตฟอร์มแบบ Client-focused สำหรับผู้ใช้งานทั่วไป 100% ครับ!** 🎮✨\n\nระบบของเราได้รับการออกแบบให้เป็นสารานุกรมอนิเมะและตารางออกอากาศที่เปิดเผยข้อมูลให้ทุกคนเข้าถึงได้อย่างเท่าเทียมและสะดวกรวดเร็ว โดยไม่มีการเก็บข้อมูลส่วนบุคคล ระบบความปลอดภัยที่ซับซ้อน หรือแผงควบคุมหลังบ้านที่ยุ่งยากกวนใจครับ\n\nคุณผู้ดูสามารถเพลิดเพลินกับการค้นหาข้อมูล อนิเมะซีซัน ตารางฉายแบบเรียลไทม์ และพูดคุยกับผมได้อย่างราบรื่นและปลอดภัยสูงสุดเลยครับ! 🤖💖`;
+      }
+      // 5. คำถามอื่น ๆ (Default conversational fallback)
+      else {
+        aiResponse = `**กระผม Gemma AI ยินดีรับฟังครับคุณผู้ดู!** 🤖✨\n\nคำถามของคุณที่ว่า *"${userMsgText}"* น่าสนใจทีเดียวครับ! \n\nเพื่อประโยชน์สูงสุดในการท่องเว็บ **Anime Tracker** ของเรา ผมขอแนะนำฟังก์ชันหลัก ๆ ที่คุณสามารถกดใช้งานได้ดังนี้นะครับ:\n1. 🔍 **ค้นหาด่วน (Instant Search)**: เพียงพิมพ์ชื่ออนิเมะที่คุณต้องการในช่องค้นหาด้านบนของเพจ ระบบจะแสดงผลลัพธ์ทันทีในเวลากระพริบตา\n2. 📅 **ตารางฉายประจำวัน**: ตรวจเช็คเวลาถอยหลังก่อนอนิเมะเรื่องโปรดฉายจริงได้ในหน้าแรก\n3. 🎨 **สารานุกรมข้อมูลละเอียด**: คลิกปุ่ม **"ดูข้อมูลเพิ่มเติม"** เพื่อเปิดดูวิดีโอตัวอย่าง YouTube, สตูดิโอผู้ผลิต, ตัวละคร, ทีมงาน และช่องทางดูถูกลิขสิทธิ์\n\nลองสอบถามข้อมูลอนิเมะประเภทที่คุณอยากดูดูสิครับ เช่น *"มีอนิเมะดราม่าซึ้งๆ แนะนำไหม"* แล้วผมจะค้นหารายชื่ออนิเมะของแท้ที่อยู่ในระบบมาเสิร์ฟให้คุณทันทีเลยครับ!`;
+      }
+
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        role: 'model',
+        content: aiResponse,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
     } catch (err: any) {
       console.error('Chat AI Error:', err);
-      setError(err.message || 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง');
+      setError(err.message || 'การประมวลผลคำปรึกษาขัดข้อง กรุณาลองใหม่อีกครั้ง');
       
-      // เพิ่มข้อความระบบแจ้งเตือนข้อผิดพลาด
       setMessages(prev => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'model',
-          content: `⚠️ **ระบบเชื่อมต่อขัดข้องชั่วคราวครับคุณผู้ดู:** \nไม่สามารถขอข้อมูลจาก Gemma AI Engine ได้ในขณะนี้ กรุณาลองส่งคำถามใหม่อีกครั้ง หรือเช็คการตั้งค่า API ในเบื้องหลังของระบบครับ`,
+          content: `⚠️ **ระบบประมวลผลขัดข้องชั่วคราวครับคุณผู้ดู:** \nไม่สามารถขอข้อมูลจาก Gemma AI Engine ได้ในขณะนี้ กรุณาลองส่งคำถามใหม่อีกครั้งครับ`,
           timestamp: new Date()
         }
       ]);

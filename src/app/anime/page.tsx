@@ -1,9 +1,9 @@
-import React from 'react';
-import Link from 'next/link';
+'use client';
 
-export const runtime = 'edge';
+import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
-  Compass,
   ArrowLeft,
   Star,
   Tv,
@@ -16,7 +16,6 @@ import {
   Layers,
   Play,
   Clock,
-  BookOpen,
   Sparkles,
   ExternalLink,
 } from 'lucide-react';
@@ -27,32 +26,65 @@ import { SearchBar } from '@/components/SearchBar';
 import { getCustomAnimeById } from '@/lib/db';
 import { BackButton } from '@/components/BackButton';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
-import { notFound } from 'next/navigation';
 
-interface AnimeDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
+function AnimeDetailPageContent() {
+  const searchParams = useSearchParams();
+  const idStr = searchParams.get('id');
+  const animeId = idStr ? parseInt(idStr, 10) : NaN;
 
-export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) {
-  const { id } = await params;
-  const animeId = parseInt(id, 10);
-  
+  const [loading, setLoading] = useState(true);
+  const [anime, setAnime] = useState<any>(null);
+  const [isCustom, setIsCustom] = useState(false);
+
+  useEffect(() => {
+    async function loadDetail() {
+      if (isNaN(animeId)) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        if (animeId >= 9000000) {
+          const custom = getCustomAnimeById(animeId);
+          setAnime(custom);
+          setIsCustom(true);
+        } else {
+          const data = await getAnimeDetail(animeId);
+          setAnime(data);
+          setIsCustom(false);
+        }
+      } catch (err) {
+        console.error('Failed to load anime details:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDetail();
+  }, [animeId]);
+
   if (isNaN(animeId)) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-anime-bg text-slate-100 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <span className="text-6xl">🔍</span>
+        <h2 className="text-2xl font-black">ไม่ระบุรหัสข้อมูลอนิเมะ</h2>
+        <p className="text-slate-400 max-w-md">กรุณาระบุรหัสอนิเมะที่ถูกต้องผ่านพารามิเตอร์ของ URL</p>
+        <Link href="/" className="btn-primary px-5 py-2.5 rounded-xl text-sm inline-flex items-center space-x-2">
+          <ArrowLeft className="w-4 h-4" />
+          <span>กลับสู่แดชบอร์ด</span>
+        </Link>
+      </div>
+    );
   }
 
-  let anime: any = null;
-  let isCustom = false;
-
-  // ตรวจสอบว่า ID เป็นอนิเมะ Custom หรือไม่
-  if (animeId >= 9000000) {
-    anime = getCustomAnimeById(animeId);
-    isCustom = true;
-  } else {
-    // ดึงรายละเอียดอนิเมะจาก API
-    anime = await getAnimeDetail(animeId);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-anime-bg text-slate-100 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-slate-400 font-semibold animate-pulse">กำลังโหลดรายละเอียดข้อมูลอนิเมะ...</p>
+      </div>
+    );
   }
 
   if (!anime) {
@@ -123,7 +155,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
   const formatFuzzyDate = (date?: { year?: number; month?: number; day?: number }) => {
     if (!date || !date.year) return 'ไม่ระบุ';
     const monthsThai = [
-      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มี.ค.',
       'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
     ];
     const dayStr = date.day ? `${date.day} ` : '';
@@ -166,7 +198,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
             <Link href="/" className="flex items-center space-x-2.5 group">
               <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] group-hover:scale-105 transition-all duration-300">
                 <img
-                  src="/logo.png"
+                  src="/ANIME-TRACKER/logo.png"
                   alt="Anime Tracker Logo"
                   className="w-full h-full object-cover"
                 />
@@ -692,5 +724,17 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
       </main>
 
     </div>
+  );
+}
+
+export default function AnimeDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-anime-bg flex items-center justify-center text-slate-400 font-semibold animate-pulse">
+        กำลังโหลดรายละเอียดอนิเมะ...
+      </div>
+    }>
+      <AnimeDetailPageContent />
+    </Suspense>
   );
 }

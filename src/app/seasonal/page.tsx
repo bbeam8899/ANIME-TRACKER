@@ -1,31 +1,22 @@
-import React, { Suspense } from 'react';
+'use client';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { Compass, Filter, Sparkles, Layers, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { searchSeasonalAnime } from '@/lib/anilist';
-
-export const runtime = 'edge';
 import { AnimeCard } from '@/components/AnimeCard';
 import { SearchBar } from '@/components/SearchBar';
 import { SeasonalFilterSelector } from '@/components/SeasonalFilterSelector';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
+import { useSearchParams } from 'next/navigation';
 
-interface SeasonalPageProps {
-  searchParams: Promise<{
-    season?: string;
-    year?: string;
-    genre?: string;
-    sort?: string;
-    search?: string;
-  }>;
-}
+function SeasonalPageContent() {
+  const searchParams = useSearchParams();
 
-export default async function SeasonalPage({ searchParams }: SeasonalPageProps) {
-  const resolvedSearchParams = await searchParams;
-
-  // 1. อ่านค่าพารามิเตอร์จาก URL พร้อมกำหนดค่า Default (2026/SPRING)
+  // 1. อ่านค่าพารามิเตอร์จาก URL พร้อมกำหนดค่า Default
   const now = new Date();
-  const defaultYear = now.getFullYear(); // 2026
+  const defaultYear = now.getFullYear();
   
   // ตรวจหา Season ปัจจุบัน
   const month = now.getMonth();
@@ -34,66 +25,83 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
   else if (month >= 6 && month <= 8) defaultSeason = 'SUMMER';
   else if (month >= 9 && month <= 11) defaultSeason = 'FALL';
 
-  const currentSeason = (resolvedSearchParams.season?.toUpperCase() || defaultSeason) as 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL';
-  const currentYear = resolvedSearchParams.year ? parseInt(resolvedSearchParams.year, 10) : defaultYear;
-  const currentGenre = resolvedSearchParams.genre || null;
-  const currentSort = resolvedSearchParams.sort || 'POPULARITY_DESC';
-  const searchQuery = resolvedSearchParams.search || null;
+  const currentSeason = (searchParams.get('season')?.toUpperCase() || defaultSeason) as 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL';
+  const currentYear = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : defaultYear;
+  const currentGenre = searchParams.get('genre') || null;
+  const currentSort = searchParams.get('sort') || 'POPULARITY_DESC';
+  const searchQuery = searchParams.get('search') || null;
 
   // ดึงประเภทอนิเมะทั้งหมดแบบไดนามิกจากฐานข้อมูล
-  const dynamicGenres = getGenresList();
+  const dynamicGenres = getGenresList() || [];
+
+  const [loading, setLoading] = useState(true);
+  const [mergedAnimeList, setMergedAnimeList] = useState<any[]>([]);
 
   // 2. ดึงข้อมูลสดจาก AniList API ตามตัวกรอง
-  const pageData = await searchSeasonalAnime({
-    season: currentSeason,
-    seasonYear: currentYear,
-    genre: currentGenre,
-    search: searchQuery,
-    sort: [currentSort],
-    page: 1,
-    perPage: 30,
-  });
+  useEffect(() => {
+    async function loadSeasonalData() {
+      setLoading(true);
+      try {
+        const pageData = await searchSeasonalAnime({
+          season: currentSeason,
+          seasonYear: currentYear,
+          genre: currentGenre,
+          search: searchQuery,
+          sort: [currentSort],
+          page: 1,
+          perPage: 30,
+        });
 
-  const apiAnimeList = pageData.media || [];
+        const apiAnimeList = pageData?.media || [];
 
-  // 3. ดึงข้อมูลอนิเมะ Custom และคัดกรองในฝั่ง Server ตามพารามิเตอร์
-  const customAnimeList = getCustomAnimeList();
-  const filteredCustomAnime = customAnimeList.filter(anime => {
-    // กรองตาม Season และ Year
-    if (anime.season !== currentSeason || anime.seasonYear !== currentYear) {
-      return false;
-    }
-    // กรองตามประเภท (Genre)
-    if (currentGenre && !anime.genres?.includes(currentGenre)) {
-      return false;
-    }
-    // กรองตามกล่องค้นหา (Search Query)
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchesTitle = 
-        (anime.title.english || '').toLowerCase().includes(q) ||
-        (anime.title.romaji || '').toLowerCase().includes(q) ||
-        (anime.title.native || '').toLowerCase().includes(q);
-      const matchesDesc = (anime.description || '').toLowerCase().includes(q);
-      if (!matchesTitle && !matchesDesc) {
-        return false;
+        // 3. ดึงข้อมูลอนิเมะ Custom และคัดกรองฝั่ง Client ตามพารามิเตอร์
+        const customAnimeList = getCustomAnimeList() || [];
+        const filteredCustomAnime = customAnimeList.filter(anime => {
+          // กรองตาม Season และ Year
+          if (anime.season !== currentSeason || anime.seasonYear !== currentYear) {
+            return false;
+          }
+          // กรองตามประเภท (Genre)
+          if (currentGenre && !anime.genres?.includes(currentGenre)) {
+            return false;
+          }
+          // กรองตามกล่องค้นหา (Search Query)
+          if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const matchesTitle = 
+              (anime.title.english || '').toLowerCase().includes(q) ||
+              (anime.title.romaji || '').toLowerCase().includes(q) ||
+              (anime.title.native || '').toLowerCase().includes(q);
+            const matchesDesc = (anime.description || '').toLowerCase().includes(q);
+            if (!matchesTitle && !matchesDesc) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        // ผสานข้อมูลเข้าด้วยกัน
+        const merged = [...filteredCustomAnime, ...apiAnimeList];
+
+        // จัดเรียงผลลัพธ์แบบรวมตามการตั้งค่าของผู้ใช้
+        if (currentSort === 'POPULARITY_DESC') {
+          merged.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+        } else if (currentSort === 'SCORE_DESC') {
+          merged.sort((a, b) => (b.averageScore ?? 0) - (a.averageScore ?? 0));
+        } else if (currentSort === 'TRENDING_DESC') {
+          merged.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+        }
+
+        setMergedAnimeList(merged);
+      } catch (error) {
+        console.error('Failed to load seasonal data:', error);
+      } finally {
+        setLoading(false);
       }
     }
-    return true;
-  });
 
-  // ผสานข้อมูลเข้าด้วยกัน
-  const mergedAnimeList = [...filteredCustomAnime, ...apiAnimeList];
-
-  // จัดเรียงผลลัพธ์แบบรวมตามการตั้งค่าของผู้ใช้
-  if (currentSort === 'POPULARITY_DESC') {
-    mergedAnimeList.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
-  } else if (currentSort === 'SCORE_DESC') {
-    mergedAnimeList.sort((a, b) => (b.averageScore ?? 0) - (a.averageScore ?? 0));
-  } else if (currentSort === 'TRENDING_DESC') {
-    // จัดลำดับยอดการเข้าชมหรือความนิยม
-    mergedAnimeList.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
-  }
+    loadSeasonalData();
+  }, [currentSeason, currentYear, currentGenre, currentSort, searchQuery]);
 
   // แปลงชื่อซีซันเพื่อการแสดงผลสวยงาม
   const formatSeasonText = (s: string) => {
@@ -109,7 +117,7 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
             <Link href="/" className="flex items-center space-x-2.5 group">
               <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] group-hover:scale-105 transition-all duration-300">
                 <img
-                  src="/logo.png"
+                  src="/ANIME-TRACKER/logo.png"
                   alt="Anime Tracker Logo"
                   className="w-full h-full object-cover"
                 />
@@ -175,19 +183,13 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
             <span>ปรับแต่งตัวคัดกรองข้อมูล (Filter Panel)</span>
           </div>
 
-          <Suspense fallback={
-            <div className="w-full h-16 flex items-center justify-center text-slate-500 animate-pulse text-xs font-bold">
-              กำลังโหลดระบบคัดกรองอนิเมะ...
-            </div>
-          }>
-            <SeasonalFilterSelector
-              currentSeason={currentSeason}
-              currentYear={currentYear}
-              currentGenre={currentGenre}
-              currentSort={currentSort}
-              genres={dynamicGenres}
-            />
-          </Suspense>
+          <SeasonalFilterSelector
+            currentSeason={currentSeason}
+            currentYear={currentYear}
+            currentGenre={currentGenre}
+            currentSort={currentSort}
+            genres={dynamicGenres}
+          />
         </div>
 
         {/* Anime Search Results Grid */}
@@ -202,11 +204,17 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
               </h3>
             </div>
             <span className="text-xs font-bold bg-slate-900 text-slate-400 px-3 py-1 rounded-full border border-slate-800">
-              พบ {mergedAnimeList.length} รายการ
+              พบ {loading ? '...' : mergedAnimeList.length} รายการ
             </span>
           </div>
 
-          {mergedAnimeList.length > 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-5 animate-pulse">
+              {Array.from({ length: 12 }).map((_, idx) => (
+                <div key={idx} className="h-72 bg-slate-900/60 border border-slate-800 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : mergedAnimeList.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-5">
               {mergedAnimeList.map((anime, idx) => (
                 <AnimeCard key={`${anime.id}-${idx}`} media={anime as any} />
@@ -234,7 +242,7 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
       {/* 3. Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 mt-12 py-10 px-4 md:px-12 text-center text-xs text-slate-500 font-medium w-full">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <p>© {currentYear} Anime Tracker & Seasonal Tracker. พัฒนาด้วย Next.js 14, TypeScript และ Tailwind CSS 🎮</p>
+          <p>© {currentYear} Anime Tracker & Seasonal Tracker. พัฒนาด้วย Next.js 15, TypeScript และ Tailwind CSS 🎮</p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <p className="opacity-70">ดึงข้อมูลลิขสิทธิ์ถูกต้องเรียลไทม์ผ่าน <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="hover:text-violet-400 underline">AniList API v2</a></p>
           </div>
@@ -242,5 +250,17 @@ export default async function SeasonalPage({ searchParams }: SeasonalPageProps) 
       </footer>
 
     </div>
+  );
+}
+
+export default function SeasonalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-anime-bg flex items-center justify-center text-slate-400 font-semibold animate-pulse">
+        กำลังเชื่อมต่อตัวกรองซีซันอนิเมะ...
+      </div>
+    }>
+      <SeasonalPageContent />
+    </Suspense>
   );
 }

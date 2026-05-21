@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Loader2, Star, X } from 'lucide-react';
 import { AnimeMedia } from '@/lib/types';
+import { searchAnimeQuick } from '@/lib/anilist';
 
 export function SearchBar() {
   const [query, setQuery] = useState('');
@@ -23,13 +24,8 @@ export function SearchBar() {
     setIsLoading(true);
     const debounceTimer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data);
-        } else {
-          setResults([]);
-        }
+        const data = await searchAnimeQuick(query, 8);
+        setResults(data || []);
       } catch (err) {
         console.error('Error searching anime:', err);
         setResults([]);
@@ -105,7 +101,7 @@ export function SearchBar() {
                 
                 return (
                   <Link
-                    href={`/anime/${media.id}`}
+                    href={`/anime?id=${media.id}`}
                     key={media.id}
                     onClick={() => setIsOpen(false)}
                     className="flex items-center space-x-3.5 p-3 hover:bg-slate-800/40 transition-colors group"

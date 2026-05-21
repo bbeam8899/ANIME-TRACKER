@@ -17,7 +17,7 @@ export function AnimeCard({ media }: AnimeCardProps) {
   const score = media.averageScore ? (media.averageScore / 10).toFixed(1) : null;
 
   return (
-    <Link href={`/anime/${media.id}`} className="group block h-full">
+    <Link href={`/anime?id=${media.id}`} className="group block h-full">
       <div className="glass-panel glass-panel-hover h-full rounded-2xl overflow-hidden p-3 border border-slate-800 flex flex-col justify-between">
         
         {/* Cover Image & Rating Badge */}

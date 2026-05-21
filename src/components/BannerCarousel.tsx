@@ -99,7 +99,7 @@ export function BannerCarousel({ mediaList }: BannerCarouselProps) {
 
           {/* Description */}
           {currentMedia.description && (
-            <p 
+            <div 
               className="text-slate-300 text-xs md:text-sm line-clamp-3 leading-relaxed drop-shadow max-w-xl font-normal opacity-90"
               dangerouslySetInnerHTML={{ __html: currentMedia.description }}
             />
@@ -114,7 +114,7 @@ export function BannerCarousel({ mediaList }: BannerCarouselProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-3">
-            <Link href={`/anime/${currentMedia.id}`} className="btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs md:text-sm">
+            <Link href={`/anime?id=${currentMedia.id}`} className="btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs md:text-sm">
               <Play className="w-4 h-4 fill-white" />
               <span>ดูข้อมูลเต็ม</span>
             </Link>
