@@ -1,0 +1,38 @@
+{
+  "views": {
+    "totalViews": 37,
+    "uniqueCount": 1,
+    "dailyStats": [
+      {
+        "date": "2026-05-21",
+        "views": 37,
+        "uniques": 1,
+        "visitors": [
+          "53deb1580eb17ae1336d9260fb213ef741dabbcffb3549a39f696822918bcb49"
+        ]
+      }
+    ],
+    "animeViews": {
+      "147105": 3,
+      "179950": 2,
+      "180745": 2,
+      "186497": 2,
+      "189046": 2
+    }
+  },
+  "anime": [],
+  "genres": [
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Drama",
+    "Fantasy",
+    "Mystery",
+    "Psychological",
+    "Romance",
+    "Sci-Fi",
+    "Slice of Life",
+    "Supernatural",
+    "Thriller"
+  ]
+}
