@@ -10,6 +10,7 @@ import { SeasonalFilterSelector } from '@/components/SeasonalFilterSelector';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
 import { useSearchParams } from 'next/navigation';
+import { getLogoPath } from '@/lib/basePath';
 
 function SeasonalPageContent() {
   const searchParams = useSearchParams();
@@ -33,6 +34,12 @@ function SeasonalPageContent() {
 
   // ดึงประเภทอนิเมะทั้งหมดแบบไดนามิกจากฐานข้อมูล
   const dynamicGenres = getGenresList() || [];
+
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
+
+  useEffect(() => {
+    setLogoUrl(getLogoPath());
+  }, []);
 
   const [loading, setLoading] = useState(true);
   const [mergedAnimeList, setMergedAnimeList] = useState<any[]>([]);
@@ -117,7 +124,7 @@ function SeasonalPageContent() {
             <Link href="/" className="flex items-center space-x-2.5 group">
               <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] group-hover:scale-105 transition-all duration-300">
                 <img
-                  src="/ANIME-TRACKER/logo.png"
+                  src={logoUrl}
                   alt="Anime Tracker Logo"
                   className="w-full h-full object-cover"
                 />

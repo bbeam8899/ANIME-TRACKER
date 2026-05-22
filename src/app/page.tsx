@@ -14,8 +14,10 @@ import { SearchBar } from '@/components/SearchBar';
 import { getCustomAnimeList } from '@/lib/db';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
 import Link from 'next/link';
+import { getLogoPath } from '@/lib/basePath';
 
 export default function HomePage() {
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [loading, setLoading] = useState(true);
   const [trendingAnime, setTrendingAnime] = useState<any[]>([]);
   const [airingSchedule, setAiringSchedule] = useState<any[]>([]);
@@ -23,6 +25,10 @@ export default function HomePage() {
   const [mergedSeasonalAnime, setMergedSeasonalAnime] = useState<any[]>([]);
   const [formattedSeason, setFormattedSeason] = useState('');
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setLogoUrl(getLogoPath());
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -102,7 +108,7 @@ export default function HomePage() {
             <Link href="/" className="flex items-center space-x-2.5 group">
               <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] group-hover:scale-105 transition-all duration-300">
                 <img
-                  src="/ANIME-TRACKER/logo.png"
+                  src={logoUrl}
                   alt="Anime Tracker Logo"
                   className="w-full h-full object-cover"
                 />
