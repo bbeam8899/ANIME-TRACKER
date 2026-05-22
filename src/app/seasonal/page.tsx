@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { Compass, Filter, Sparkles, Layers, SlidersHorizontal, ArrowLeft, Database } from 'lucide-react';
+import { Compass, Filter, Sparkles, Layers, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { searchSeasonalAnime } from '@/lib/anilist';
 import { AnimeCard } from '@/components/AnimeCard';
 import { SearchBar } from '@/components/SearchBar';
@@ -143,13 +143,6 @@ function SeasonalPageContent() {
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>แดชบอร์ด</span>
               </Link>
-              <Link
-                href="/admin"
-                className="flex items-center space-x-1 text-xs font-bold bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-slate-300 text-violet-400"
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>จัดการ</span>
-              </Link>
               <AIAssistantButton />
             </div>
           </div>
@@ -168,10 +161,6 @@ function SeasonalPageContent() {
               <Link href="/seasonal" className="text-violet-400 flex items-center space-x-1.5 py-2 px-1 border-b-2 border-violet-500">
                 <Layers className="w-4 h-4" />
                 <span>ตัวกรองซีซัน</span>
-              </Link>
-              <Link href="/admin" className="hover:text-violet-400 flex items-center space-x-1.5 py-2 px-1 border-b-2 border-transparent transition-colors">
-                <Database className="w-4 h-4" />
-                <span>จัดการข้อมูล (Admin)</span>
               </Link>
             </nav>
             <div className="border-l border-slate-800 h-6 mx-1" />

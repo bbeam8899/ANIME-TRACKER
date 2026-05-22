@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Compass, Calendar, Flame, Layers, Database } from 'lucide-react';
+import { Compass, Calendar, Flame, Layers } from 'lucide-react';
 import {
   getTrendingAnime,
   getAiringSchedule,
@@ -127,13 +127,6 @@ export default function HomePage() {
                 <Layers className="w-3.5 h-3.5" />
                 <span>ตัวกรอง</span>
               </Link>
-              <Link
-                href="/admin"
-                className="flex items-center space-x-1 text-xs font-bold bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-slate-300 active:scale-95 transition-all text-violet-400"
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>จัดการ</span>
-              </Link>
               <AIAssistantButton />
             </div>
           </div>
@@ -153,10 +146,6 @@ export default function HomePage() {
               <Link href="/seasonal" className="hover:text-violet-400 flex items-center space-x-1.5 py-2 px-1 border-b-2 border-transparent transition-colors">
                 <Layers className="w-4 h-4" />
                 <span>ตัวกรองซีซัน</span>
-              </Link>
-              <Link href="/admin" className="hover:text-violet-400 flex items-center space-x-1.5 py-2 px-1 border-b-2 border-transparent transition-colors">
-                <Database className="w-4 h-4" />
-                <span>จัดการข้อมูล (Admin)</span>
               </Link>
             </nav>
             <div className="border-l border-slate-800 h-6 mx-1" />
