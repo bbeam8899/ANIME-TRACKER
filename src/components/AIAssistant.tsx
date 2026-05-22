@@ -19,23 +19,8 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [requestCount, setRequestCount] = useState<number>(0);
   
-  const MAX_AI_REQUESTS = 10;
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // โหลดจำนวนการถามจาก localStorage เมื่อเข้าสู่เว็บครั้งแรก
-  useEffect(() => {
-    const savedCount = localStorage.getItem('anime_tracker_ai_requests');
-    if (savedCount) {
-      setRequestCount(parseInt(savedCount, 10));
-    }
-  }, []);
-
-  const updateRequestCount = (newCount: number) => {
-    setRequestCount(newCount);
-    localStorage.setItem('anime_tracker_ai_requests', newCount.toString());
-  };
 
   // คำถามด่วนที่เป็นปุ่มแนะนำ (Prompt Chips)
   const suggestionChips = [
@@ -53,13 +38,13 @@ export function AIAssistant() {
 
     window.addEventListener('toggle-ai-assistant', handleToggle);
 
-    // สร้างข้อความต้อนรับเริ่มต้นจาก Gemma AI เมื่อเริ่มโหลดหน้าจอเป็นครั้งแรก
+    // สร้างข้อความต้อนรับเริ่มต้นจาก Gemini AI เมื่อเริ่มโหลดหน้าจอเป็นครั้งแรก
     if (messages.length === 0) {
       setMessages([
         {
           id: 'welcome-msg',
           role: 'model',
-          content: `**สวัสดีครับคุณผู้ดู! ยินดีต้อนรับสู่ Anime Tracker ครับ!** 🎮🤖\n\nกระผมคือ **Gemma AI** ที่ปรึกษาด้านอนิเมะส่วนตัวของคุณ คอยช่วยเหลือแนะนำอนิเมะตารางฉาย ค้นหาแนวเรื่องที่ตรงใจ หรือระบบงานต่าง ๆ ของเว็บไซต์อย่างสุภาพและรวดเร็ว\n\nวันนี้อยากให้ช่วยแนะนำอนิเมะแนวไหน หรือสอบถามตารางฉายของวันใดดีครับ? พิมพ์ถามมาได้เลยนะครับ! ✨`,
+          content: `**สวัสดีครับคุณผู้ดู! ยินดีต้อนรับสู่ Anime Tracker ครับ!** 🎮🤖\n\nกระผมคือ **Gemini AI** ที่ปรึกษาด้านอนิเมะส่วนตัวของคุณ คอยช่วยเหลือแนะนำอนิเมะตารางฉาย ค้นหาแนวเรื่องที่ตรงใจ หรือระบบงานต่าง ๆ ของเว็บไซต์อย่างสุภาพและรวดเร็ว\n\nวันนี้อยากให้ช่วยแนะนำอนิเมะแนวไหน หรือสอบถามตารางฉายของวันใดดีครับ? พิมพ์ถามมาได้เลยนะครับ! ✨`,
           timestamp: new Date()
         }
       ]);
@@ -81,62 +66,23 @@ export function AIAssistant() {
 
   // 3. จัดการฟังก์ชันล้างประวัติการแชท และ รีเซ็ตขีดจำกัดการใช้งาน
   const handleClearHistory = () => {
-    if (confirm('คุณต้องการลบประวัติการสนทนาทั้งหมดและรีเซ็ตสิทธิ์การถาม Gemma AI ใช่หรือไม่?')) {
+    if (confirm('คุณต้องการลบประวัติการสนทนาทั้งหมดใช่หรือไม่?')) {
       setMessages([
         {
           id: 'welcome-msg',
           role: 'model',
-          content: `ประวัติการแชทถูกล้างและรีเซ็ตสิทธิ์การถามให้ใหม่แล้วครับ! 🧹🤖\n\nกระผม **Gemma AI** พร้อมให้บริการเริ่มต้นคำปรึกษาใหม่แล้วครับ โควตาการถามของคุณได้รับการรีเซ็ตเป็น **0/${MAX_AI_REQUESTS} ครั้ง** มีเรื่องไหนที่อยากคุยกับผมต่อไหมครับ?`,
+          content: `ประวัติการแชทถูกล้างเรียบร้อยแล้วครับ! 🧹🤖\n\nกระผม **Gemini AI** พร้อมให้บริการเริ่มต้นคำปรึกษาใหม่แล้วครับ มีเรื่องไหนที่อยากคุยกับผมต่อไหมครับ?`,
           timestamp: new Date()
         }
       ]);
-      updateRequestCount(0);
       setError('');
     }
   };
 
-  // 4. ส่งข้อความไปยัง API Route
-  const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || isLoading) return;
-
-    // เช็คขีดจำกัดการถาม AI
-    if (requestCount >= MAX_AI_REQUESTS) {
-      setError(`คุณใช้งานคำถาม Gemma AI ครบตามขีดจำกัด (${MAX_AI_REQUESTS} ครั้ง) ของเซสชันนี้แล้ว ⚠️`);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `limit-${Date.now()}`,
-          role: 'model',
-          content: `⚠️ **ขออภัยครับคุณผู้ดู!** \n\nในฐานะ **Gemma AI** กระผมมีข้อจำกัดสิทธิ์การถามฟรี **${MAX_AI_REQUESTS} ครั้ง** เพื่อประหยัดพลังงานสมองกลและระบบประมวลผลหลังบ้าน\n\nขณะนี้คุณใช้งานโควตาครบ **${MAX_AI_REQUESTS}/${MAX_AI_REQUESTS} ครั้ง** แล้วครับ\n\n* **วิธีแก้ไข:** คุณสามารถกดปุ่ม **"ล้างประวัติแชท" (รูปถังขยะสีแดงขวาบน)** 🧹 เพื่อรีเซ็ตประวัติทั้งหมดและรับโควตาคืนกลับมาเป็น **0/${MAX_AI_REQUESTS} ครั้ง** เพื่อเริ่มพูดคุยกับผมต่อได้ทันทีครับ! ✨`,
-          timestamp: new Date()
-        }
-      ]);
-      return;
-    }
-
-    setError('');
-    const userMsgText = textToSend;
-    setInput('');
-
-    // เพิ่มข้อความของผู้ใช้ลงในประวัติ
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: userMsgText,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-    
-    // เพิ่มจำนวนการใช้งานขึ้น 1
-    const nextCount = requestCount + 1;
-    updateRequestCount(nextCount);
-
+  // ฟังก์ชันคำนวนคำตอบจำลองออฟไลน์/โลคอล (Local Fallback Engine)
+  const runLocalFallback = async (userMsgText: string) => {
     try {
-      // 1. ดึงข้อมูลแวดล้อม (Context) จากฐานข้อมูลเว็บของเรา
       const customAnime = getCustomAnimeList() || [];
-      const genres = getGenresList() || [];
       
       // ดึงข้อมูลอนิเมะแนะนำยอดฮิตเบื้องต้นจาก AniList มาเป็นข้อมูลประกอบ
       let trendingAnimeList: any[] = [];
@@ -226,7 +172,7 @@ export function AIAssistant() {
 
           aiResponse += `คุณผู้ดูสามารถคลิกดูรายละเอียดเพิ่มเติม เรื่องย่อแบบเต็ม และช่องทางการรับชมสตรีมมิ่งถูกลิขสิทธิ์ได้ทันทีโดยการค้นหาชื่อเรื่องในช่องค้นหาด้านบน หรือกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อเปิดใช้งานตัวกรองแนว **"${translateGenreToThai(matchedGenre) || 'ทั้งหมด'}"** ได้ทันทีเลยครับ! มีอนิเมะเด็ด ๆ รอคุณอยู่อีกเพียบเลยครับ 🤖✨`;
         } else {
-          aiResponse = `**Gemma AI ยินดีช่วยเหลือครับ!** 🤖 ผมพยายามหาอนิเมะแนวที่คุณถามหา แต่ดูเหมือนในขณะนี้ฐานข้อมูลอาจมีแนวนี้อยู่น้อย\n\nแต่ผมขอแนะนำอนิเมะที่เป็นกระแสยอดฮิตที่สุดบนหน้าแรกให้ลองรับชมดูสักเรื่องนะครับ เช่น **"${trendingAnimeList[0]?.title?.english || 'อนิเมะยอดนิยม'}"** ซึ่งเป็นแนวยอดนิยมของซีซันนี้ครับ หรือลองกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อจัดลำดับตามคะแนนรีวิวสูงสุด (Sort: Popularity/Score) เพื่อค้นหาเรื่องอื่น ๆ ดูได้ง่าย ๆ เลยครับครับ!`;
+          aiResponse = `**Gemini AI ยินดีช่วยเหลือครับ!** 🤖 ผมพยายามหาอนิเมะแนวที่คุณถามหา แต่ดูเหมือนในขณะนี้ฐานข้อมูลอาจมีแนวนี้อยู่น้อย\n\nแต่ผมขอแนะนำอนิเมะที่เป็นกระแสยอดฮิตที่สุดบนหน้าแรกให้ลองรับชมดูสักเรื่องนะครับ เช่น **"${trendingAnimeList[0]?.title?.english || 'อนิเมะยอดนิยม'}"** ซึ่งเป็นแนวยอดนิยมของซีซันนี้ครับ หรือลองกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อจัดลำดับตามคะแนนรีวิวสูงสุด (Sort: Popularity/Score) เพื่อค้นหาเรื่องอื่น ๆ ดูได้ง่าย ๆ เลยครับครับ!`;
         }
       } 
       // 2. ถามเรื่อง ตารางฉาย / วันฉาย / วันนี้ฉายอะไร
@@ -238,7 +184,7 @@ export function AIAssistant() {
       }
       // 3. ทักทายทั่วไป หรือ แนะนำตัว
       else if (lowerMessage.includes('หวัดดี') || lowerMessage.includes('สวัสดี') || lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('ยินดีที่ได้รู้จัก')) {
-        aiResponse = `**สวัสดีครับคุณผู้ดู! ยินดีต้อนรับสู่ Anime Tracker ครับ!** 🎮🤖\n\nกระผมคือ **Gemma AI** (ผู้แนะนำและที่ปรึกษาด้านอนิเมะประจำระบบของคุณ) ขุมพลังสมองกลอัจฉริยะที่จะคอยอยู่เคียงข้างคอการ์ตูนทุกท่าน\n\nวันนี้อยากให้ผมช่วยเหลือเรื่องอะไรดีครับ? เช่น:\n- 🔍 **"แนะนำอนิเมะแนวต่อสู้มันๆ ให้หน่อย"**\n- 📅 **"วันนี้มีอนิเมะเรื่องอะไรฉายบ้าง?"**\n- 🏷️ **"เว็ปนี้มีหมวดหมู่อะไรน่าสนใจ?"**\n\nพิมพ์คุยกับผมได้เลยนะครับ ผมพร้อมให้คำแนะนำและค้นหาอนิเมะที่ตรงใจที่สุดให้คุณครับ!ครับ!`;
+        aiResponse = `**สวัสดีครับคุณผู้ดู! ยินดีต้อนรับสู่ Anime Tracker ครับ!** 🎮🤖\n\nกระผมคือ **Gemini AI** (ผู้แนะนำและที่ปรึกษาด้านอนิเมะประจำระบบของคุณ) ขุมพลังสมองกลอัจฉริยะที่จะคอยอยู่เคียงข้างคอการ์ตูนทุกท่าน\n\nวันนี้อยากให้ผมช่วยเหลือเรื่องอะไรดีครับ? เช่น:\n- 🔍 **"แนะนำอนิเมะแนวต่อสู้มันๆ ให้หน่อย"**\n- 📅 **"วันนี้มีอนิเมะเรื่องอะไรฉายบ้าง?"**\n- 🏷️ **"เว็ปนี้มีหมวดหมู่อะไรน่าสนใจ?"**\n\nพิมพ์คุยกับผมได้เลยนะครับ ผมพร้อมให้คำแนะนำและค้นหาอนิเมะที่ตรงใจที่สุดให้คุณครับ!`;
       }
       // 4. ถามเรื่องระบบแอดมินหรือ Dashboard
       else if (lowerMessage.includes('แอดมิน') || lowerMessage.includes('admin') || lowerMessage.includes('ผู้ดูแลระบบ') || lowerMessage.includes('หลังบ้าน')) {
@@ -246,7 +192,7 @@ export function AIAssistant() {
       }
       // 5. คำถามอื่น ๆ (Default conversational fallback)
       else {
-        aiResponse = `**กระผม Gemma AI ยินดีรับฟังครับคุณผู้ดู!** 🤖✨\n\nคำถามของคุณที่ว่า *"${userMsgText}"* น่าสนใจทีเดียวครับ! \n\nเพื่อประโยชน์สูงสุดในการท่องเว็บ **Anime Tracker** ของเรา ผมขอแนะนำฟังก์ชันหลัก ๆ ที่คุณสามารถกดใช้งานได้ดังนี้นะครับ:\n1. 🔍 **ค้นหาด่วน (Instant Search)**: เพียงพิมพ์ชื่ออนิเมะที่คุณต้องการในช่องค้นหาด้านบนของเพจ ระบบจะแสดงผลลัพธ์ทันทีในเวลากระพริบตา\n2. 📅 **ตารางฉายประจำวัน**: ตรวจเช็คเวลาถอยหลังก่อนอนิเมะเรื่องโปรดฉายจริงได้ในหน้าแรก\n3. 🎨 **สารานุกรมข้อมูลละเอียด**: คลิกปุ่ม **"ดูข้อมูลเพิ่มเติม"** เพื่อเปิดดูวิดีโอตัวอย่าง YouTube, สตูดิโอผู้ผลิต, ตัวละคร, ทีมงาน และช่องทางดูถูกลิขสิทธิ์\n\nลองสอบถามข้อมูลอนิเมะประเภทที่คุณอยากดูดูสิครับ เช่น *"มีอนิเมะดราม่าซึ้งๆ แนะนำไหม"* แล้วผมจะค้นหารายชื่ออนิเมะของแท้ที่อยู่ในระบบมาเสิร์ฟให้คุณทันทีเลยครับ!`;
+        aiResponse = `**กระผม Gemini AI ยินดีรับฟังครับคุณผู้ดู!** 🤖✨\n\nคำถามของคุณที่ว่า *"${userMsgText}"* น่าสนใจทีเดียวครับ! \n\nเพื่อประโยชน์สูงสุดในการท่องเว็บ **Anime Tracker** ของเรา ผมขอแนะนำฟังก์ชันหลัก ๆ ที่คุณสามารถกดใช้งานได้ดังนี้นะครับ:\n1. 🔍 **ค้นหาด่วน (Instant Search)**: เพียงพิมพ์ชื่ออนิเมะที่คุณต้องการในช่องค้นหาด้านบนของเพจ ระบบจะแสดงผลลัพธ์ทันทีในเวลากระพริบตา\n2. 📅 **ตารางฉายประจำวัน**: ตรวจเช็คเวลาถอยหลังก่อนอนิเมะเรื่องโปรดฉายจริงได้ในหน้าแรก\n3. 🎨 **สารานุกรมข้อมูลละเอียด**: คลิกปุ่ม **"ดูข้อมูลเพิ่มเติม"** เพื่อเปิดดูวิดีโอตัวอย่าง YouTube, สตูดิโอผู้ผลิต, ตัวละคร, ทีมงาน และช่องทางดูถูกลิขสิทธิ์\n\nลองสอบถามข้อมูลอนิเมะประเภทที่คุณอยากดูดูสิครับ เช่น *"มีอนิเมะดราม่าซึ้งๆ แนะนำไหม"* แล้วผมจะค้นหารายชื่ออนิเมะของแท้ที่อยู่ในระบบมาเสิร์ฟให้คุณทันทีเลยครับ!`;
       }
 
       const aiMessage: ChatMessage = {
@@ -257,18 +203,94 @@ export function AIAssistant() {
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (err: any) {
-      console.error('Chat AI Error:', err);
-      setError(err.message || 'การประมวลผลคำปรึกษาขัดข้อง กรุณาลองใหม่อีกครั้ง');
-      
+      console.error('Chat AI Local Fallback Error:', err);
       setMessages(prev => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'model',
-          content: `⚠️ **ระบบประมวลผลขัดข้องชั่วคราวครับคุณผู้ดู:** \nไม่สามารถขอข้อมูลจาก Gemma AI Engine ได้ในขณะนี้ กรุณาลองส่งคำถามใหม่อีกครั้งครับ`,
+          content: `⚠️ **ระบบประมวลผลขัดข้องชั่วคราวครับคุณผู้ดู:** \nไม่สามารถจำลองคำตอบภายในเครื่องได้ในขณะนี้ กรุณาลองส่งคำถามใหม่อีกครั้งครับ`,
           timestamp: new Date()
         }
       ]);
+    }
+  };
+
+  // 4. ส่งข้อความไปยัง API Route
+  const handleSendMessage = async (textToSend: string) => {
+    if (!textToSend.trim() || isLoading) return;
+
+    setError('');
+    const userMsgText = textToSend;
+    setInput('');
+
+    // เพิ่มข้อความของผู้ใช้ลงในประวัติ
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: userMsgText,
+      timestamp: new Date()
+    };
+
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setIsLoading(true);
+
+    try {
+      // 1. ดึงข้อมูลแวดล้อม (Context) จากฐานข้อมูลเว็บของเรา
+      const customAnime = getCustomAnimeList() || [];
+      
+      // ดึงข้อมูลอนิเมะแนะนำยอดฮิตเบื้องต้นจาก AniList มาเป็นข้อมูลประกอบ
+      let trendingAnimeList: any[] = [];
+      try {
+        trendingAnimeList = await getTrendingAnime(5) || [];
+      } catch (e) {
+        console.error('Failed to pre-fetch trending for AI context', e);
+      }
+
+      // เรียกใช้งาน API Route ของ Gemini 2.5 Flash
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: nextMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          context: {
+            customAnime,
+            trendingAnime: trendingAnimeList
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // หาก API กุญแจหมดอายุ หรือไม่ได้กำหนด GEMINI_API_KEY ให้รัน Local Fallback ทันที
+        console.warn('Gemini 2.5 API returned an error, running resilient local fallback instead:', data);
+        await runLocalFallback(userMsgText);
+        return;
+      }
+
+      if (data.reply) {
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          role: 'model',
+          content: data.reply,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error('No response content from Gemini API');
+      }
+
+    } catch (err: any) {
+      console.error('Gemini 2.5 API calling failed, running resilient local fallback:', err);
+      // สำรองข้อมูลกลับไปยัง local fallback
+      await runLocalFallback(userMsgText);
     } finally {
       setIsLoading(false);
     }
@@ -345,8 +367,8 @@ export function AIAssistant() {
             
             <div>
               <div className="flex items-center space-x-1.5">
-                <h3 className="font-extrabold text-sm text-white">Gemma AI</h3>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-violet-950/60 border border-violet-500/25 px-1.5 py-0.5 rounded text-violet-400">Gemma 4 Engine</span>
+                <h3 className="font-extrabold text-sm text-white">Gemini AI</h3>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-violet-950/60 border border-violet-500/25 px-1.5 py-0.5 rounded text-violet-400">Gemini 2.5 Flash</span>
               </div>
               <p className="text-[10px] text-slate-450 font-bold uppercase tracking-wider">ที่ปรึกษาอนิเมะส่วนตัวสากล</p>
             </div>
@@ -423,7 +445,7 @@ export function AIAssistant() {
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span className="text-[9px] text-slate-550 font-bold font-mono">Gemma กำลังใช้สมองครุ่นคิด...</span>
+                <span className="text-[9px] text-slate-550 font-bold font-mono">Gemini กำลังใช้สมองครุ่นคิด...</span>
               </div>
             </div>
           )}
@@ -435,7 +457,7 @@ export function AIAssistant() {
         <div className="p-4 border-t border-slate-900 bg-slate-950/30 space-y-3.5">
           
           {/* ชิปข้อแนะนำคำถามด่วน (Prompt Chips) - แสดงเฉพาะเมื่อ AI พร้อมตอบ และลิมิตยังไม่เต็ม */}
-          {!isLoading && messages.length > 0 && requestCount < MAX_AI_REQUESTS && (
+          {!isLoading && messages.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {suggestionChips.map((chip, idx) => (
                 <button
@@ -450,31 +472,6 @@ export function AIAssistant() {
             </div>
           )}
 
-          {/* แถบลิมิตการใช้งาน AI */}
-          <div className="space-y-1.5 pt-1">
-            <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold">
-              <span className="flex items-center space-x-1">
-                <Sparkles className="w-3 h-3 text-violet-400 animate-pulse" />
-                <span>โควตาการถาม AI ในเซสชันนี้</span>
-              </span>
-              <span className={requestCount >= MAX_AI_REQUESTS ? 'text-red-400 font-black' : 'text-slate-300'}>
-                {requestCount} / {MAX_AI_REQUESTS} ครั้ง
-              </span>
-            </div>
-            <div className="w-full h-1.5 bg-[#03060c] rounded-full overflow-hidden border border-slate-850">
-              <div 
-                className={`h-full transition-all duration-500 rounded-full bg-gradient-to-r ${
-                  requestCount >= MAX_AI_REQUESTS 
-                    ? 'from-red-500 to-pink-600 shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
-                    : requestCount >= MAX_AI_REQUESTS * 0.7 
-                    ? 'from-amber-500 to-orange-500' 
-                    : 'from-violet-500 to-cyan-500'
-                }`}
-                style={{ width: `${Math.min((requestCount / MAX_AI_REQUESTS) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-
           {/* กล่องอินพุตสำหรับพิมพ์แชท */}
           <form 
             onSubmit={(e) => {
@@ -488,19 +485,15 @@ export function AIAssistant() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={
-                  requestCount >= MAX_AI_REQUESTS
-                    ? "ถามครบโควตา 10 ครั้งแล้ว กรุณาล้างประวัติเพื่อรีเซ็ต..."
-                    : "พิมพ์ถาม Gemma AI (เช่น แนะนำอนิเมะโรแมนติก)..."
-                }
-                disabled={isLoading || requestCount >= MAX_AI_REQUESTS}
+                placeholder="พิมพ์ถาม Gemini AI (เช่น แนะนำอนิเมะโรแมนติก)..."
+                disabled={isLoading}
                 className="w-full bg-[#03060c] border border-slate-850 hover:border-slate-800 focus:border-violet-500 focus:outline-none rounded-2xl py-3.5 pl-4 pr-10 text-xs sm:text-sm text-slate-100 placeholder-slate-550 shadow-inner transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium"
               />
             </div>
             
             <button
               type="submit"
-              disabled={isLoading || !input.trim() || requestCount >= MAX_AI_REQUESTS}
+              disabled={isLoading || !input.trim()}
               className="p-3.5 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 disabled:from-slate-900 disabled:to-slate-900 text-white rounded-2xl transition-all shadow-[0_4px_12px_rgba(139,92,246,0.15)] disabled:shadow-none hover:shadow-[0_8px_18px_rgba(139,92,246,0.25)] disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer active:scale-95 flex items-center justify-center"
             >
               <Send className="w-4 h-4" />
@@ -509,7 +502,7 @@ export function AIAssistant() {
 
           {/* คำบรรยายแบรนด์ปิดท้าย */}
           <div className="flex items-center justify-center space-x-1.5 opacity-60 text-slate-500">
-            <span className="text-[9px] font-black uppercase tracking-wider">SECURE AI CONSULTING PORT • POWERED BY GEMMA 4</span>
+            <span className="text-[9px] font-black uppercase tracking-wider">SECURE AI CONSULTING PORT • POWERED BY GEMINI 2.5 FLASH</span>
           </div>
         </div>
 
