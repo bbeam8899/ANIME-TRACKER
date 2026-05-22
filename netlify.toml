@@ -1,0 +1,10 @@
+# netlify.toml
+# บอก Netlify ให้บิลด์แบบ Static Export โดยตรง และปิดการใช้งาน Next.js Runtime plugin ที่ยุ่งยาก
+
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  DISABLE_ESSENTIAL_NEXTJS_PLUGIN = "true"
