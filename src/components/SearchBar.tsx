@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Loader2, Star, X, CornerDownLeft, Sparkles, Command, Tv, Layers } from 'lucide-react';
@@ -16,9 +17,15 @@ export function SearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [featuredAnime, setFeaturedAnime] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
+
+  // รอให้คอมโพเนนต์ Mount ฝั่งไคลเอนต์เสร็จสิ้นเพื่อหลีกเลี่ยง Hydration Mismatch ใน SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // โหลดอนิเมะแนะนำสำหรับแสดงเวลาผลลัพธ์ว่าง (ดึงจาก Custom DB)
   useEffect(() => {
@@ -161,7 +168,7 @@ export function SearchBar() {
       </button>
 
       {/* 2. macOS Spotlight Search Modal Overlay */}
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div 
           className="fixed inset-0 z-50 bg-[#020408]/80 backdrop-blur-md flex items-start justify-center pt-[10vh] md:pt-[15vh] px-4 overflow-y-auto animate-fade-in"
           onClick={handleClose}
@@ -408,7 +415,8 @@ export function SearchBar() {
 
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
