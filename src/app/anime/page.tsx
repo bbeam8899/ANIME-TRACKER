@@ -771,6 +771,16 @@ function AnimeDetailPageContent() {
 
       </main>
 
+      {/* 4. Footer */}
+      <footer className="border-t border-slate-900 bg-slate-950 mt-12 py-10 px-4 md:px-12 text-center text-xs text-slate-500 font-medium w-full">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <p>© 2026 Anime Tracker & Seasonal Tracker. พัฒนาด้วย Next.js 16, TypeScript และ Tailwind CSS 4 🎮</p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <p className="opacity-70">ดึงข้อมูลลิขสิทธิ์ถูกต้องเรียลไทม์ผ่าน <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="hover:text-violet-400 underline">AniList API v2</a></p>
+          </div>
+        </div>
+      </footer>
+
       <CharacterModal
         character={selectedCharacter}
         isOpen={isCharModalOpen}
