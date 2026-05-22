@@ -76,11 +76,29 @@ export interface DBData {
 const staticDb: DBData = dbJson as unknown as DBData;
 
 export function readDB(): DBData {
+  if (typeof window !== 'undefined') {
+    const localDb = localStorage.getItem('anime_tracker_db');
+    if (localDb) {
+      try {
+        return JSON.parse(localDb);
+      } catch (e) {
+        console.error('Failed to parse anime_tracker_db from localStorage', e);
+      }
+    }
+  }
   return staticDb;
 }
 
 export async function writeDB(data: DBData): Promise<boolean> {
-  // ไม่ทำการเขียนไฟล์ลงดิสก์เนื่องจากสภาพแวดล้อมบนระบบ Cloudflare เป็น Read-only
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('anime_tracker_db', JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error('Failed to save db to localStorage', e);
+      return false;
+    }
+  }
   return true;
 }
 
@@ -90,7 +108,7 @@ export async function writeDB(data: DBData): Promise<boolean> {
 
 export function getCustomAnimeList(): CustomAnime[] {
   const db = readDB();
-  return db.anime.map(anime => {
+  return (db.anime || []).map(anime => {
     const nodes = anime.studios?.edges?.map(e => e.node) || [];
     return {
       ...anime,
@@ -118,12 +136,58 @@ export function getCustomAnimeById(id: number): CustomAnime | null {
 }
 
 export async function saveCustomAnime(animeData: Partial<CustomAnime>): Promise<CustomAnime> {
-  // ฟังก์ชันจำลองโครงสร้างข้อมูลเพื่อไม่ให้ส่งผลเสียต่อการคอมไพล์
-  return animeData as CustomAnime;
+  const db = readDB();
+  const animeList = db.anime || [];
+  
+  let targetAnime: CustomAnime;
+  
+  if (animeData.id) {
+    // แก้ไขข้อมูลเรื่องเดิม
+    const index = animeList.findIndex(a => a.id === animeData.id);
+    if (index !== -1) {
+      targetAnime = {
+        ...animeList[index],
+        ...animeData,
+        isCustom: true
+      } as CustomAnime;
+      animeList[index] = targetAnime;
+    } else {
+      targetAnime = {
+        ...animeData,
+        isCustom: true
+      } as CustomAnime;
+      animeList.push(targetAnime);
+    }
+  } else {
+    // เพิ่มอนิเมะใหม่ - สุ่มไอดี >= 9000000
+    const existingIds = animeList.map(a => a.id);
+    let newId = 9000000;
+    while (existingIds.includes(newId)) {
+      newId = Math.floor(Math.random() * 1000000) + 9000000;
+    }
+    
+    targetAnime = {
+      ...animeData,
+      id: newId,
+      isCustom: true
+    } as CustomAnime;
+    animeList.push(targetAnime);
+  }
+  
+  db.anime = animeList;
+  await writeDB(db);
+  return targetAnime;
 }
 
 export async function deleteCustomAnime(id: number): Promise<boolean> {
-  return true;
+  const db = readDB();
+  const index = db.anime.findIndex(a => a.id === id);
+  if (index !== -1) {
+    db.anime.splice(index, 1);
+    await writeDB(db);
+    return true;
+  }
+  return false;
 }
 
 // ==========================================
@@ -132,15 +196,28 @@ export async function deleteCustomAnime(id: number): Promise<boolean> {
 
 export function getGenresList(): string[] {
   const db = readDB();
-  return db.genres;
+  return db.genres || [];
 }
 
 export async function addGenre(name: string): Promise<boolean> {
-  return true;
+  const db = readDB();
+  if (!db.genres.includes(name)) {
+    db.genres.push(name);
+    await writeDB(db);
+    return true;
+  }
+  return false;
 }
 
 export async function deleteGenre(name: string): Promise<boolean> {
-  return true;
+  const db = readDB();
+  const index = db.genres.indexOf(name);
+  if (index !== -1) {
+    db.genres.splice(index, 1);
+    await writeDB(db);
+    return true;
+  }
+  return false;
 }
 
 // ==========================================
@@ -159,3 +236,4 @@ export async function incrementAnimeViews(animeId: number): Promise<number> {
   const db = readDB();
   return db.views.animeViews[String(animeId)] || 0;
 }
+
