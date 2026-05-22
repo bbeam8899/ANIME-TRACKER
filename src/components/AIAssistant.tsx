@@ -19,8 +19,23 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requestCount, setRequestCount] = useState<number>(0);
   
+  const MAX_AI_REQUESTS = 10;
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // โหลดจำนวนการถามจาก localStorage เมื่อเข้าสู่เว็บครั้งแรก
+  useEffect(() => {
+    const savedCount = localStorage.getItem('anime_tracker_ai_requests');
+    if (savedCount) {
+      setRequestCount(parseInt(savedCount, 10));
+    }
+  }, []);
+
+  const updateRequestCount = (newCount: number) => {
+    setRequestCount(newCount);
+    localStorage.setItem('anime_tracker_ai_requests', newCount.toString());
+  };
 
   // คำถามด่วนที่เป็นปุ่มแนะนำ (Prompt Chips)
   const suggestionChips = [
@@ -64,17 +79,18 @@ export function AIAssistant() {
     }
   }, [messages, isOpen, isLoading]);
 
-  // 3. จัดการฟังก์ชันล้างประวัติการแชท
+  // 3. จัดการฟังก์ชันล้างประวัติการแชท และ รีเซ็ตขีดจำกัดการใช้งาน
   const handleClearHistory = () => {
-    if (confirm('คุณต้องการลบประวัติการสนทนาทั้งหมดกับ Gemma AI ใช่หรือไม่?')) {
+    if (confirm('คุณต้องการลบประวัติการสนทนาทั้งหมดและรีเซ็ตสิทธิ์การถาม Gemma AI ใช่หรือไม่?')) {
       setMessages([
         {
           id: 'welcome-msg',
           role: 'model',
-          content: `ประวัติการแชทถูกล้างข้อมูลแล้วครับ! 🧹🤖\n\nกระผม **Gemma AI** พร้อมให้บริการเริ่มต้นคำปรึกษาใหม่แล้วครับ มีอนิเมะเรื่องไหนที่คุณผู้ดูอยากคุยด้วยเป็นพิเศษไหมครับ?`,
+          content: `ประวัติการแชทถูกล้างและรีเซ็ตสิทธิ์การถามให้ใหม่แล้วครับ! 🧹🤖\n\nกระผม **Gemma AI** พร้อมให้บริการเริ่มต้นคำปรึกษาใหม่แล้วครับ โควตาการถามของคุณได้รับการรีเซ็ตเป็น **0/${MAX_AI_REQUESTS} ครั้ง** มีเรื่องไหนที่อยากคุยกับผมต่อไหมครับ?`,
           timestamp: new Date()
         }
       ]);
+      updateRequestCount(0);
       setError('');
     }
   };
@@ -82,6 +98,21 @@ export function AIAssistant() {
   // 4. ส่งข้อความไปยัง API Route
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
+
+    // เช็คขีดจำกัดการถาม AI
+    if (requestCount >= MAX_AI_REQUESTS) {
+      setError(`คุณใช้งานคำถาม Gemma AI ครบตามขีดจำกัด (${MAX_AI_REQUESTS} ครั้ง) ของเซสชันนี้แล้ว ⚠️`);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `limit-${Date.now()}`,
+          role: 'model',
+          content: `⚠️ **ขออภัยครับคุณผู้ดู!** \n\nในฐานะ **Gemma AI** กระผมมีข้อจำกัดสิทธิ์การถามฟรี **${MAX_AI_REQUESTS} ครั้ง** เพื่อประหยัดพลังงานสมองกลและระบบประมวลผลหลังบ้าน\n\nขณะนี้คุณใช้งานโควตาครบ **${MAX_AI_REQUESTS}/${MAX_AI_REQUESTS} ครั้ง** แล้วครับ\n\n* **วิธีแก้ไข:** คุณสามารถกดปุ่ม **"ล้างประวัติแชท" (รูปถังขยะสีแดงขวาบน)** 🧹 เพื่อรีเซ็ตประวัติทั้งหมดและรับโควตาคืนกลับมาเป็น **0/${MAX_AI_REQUESTS} ครั้ง** เพื่อเริ่มพูดคุยกับผมต่อได้ทันทีครับ! ✨`,
+          timestamp: new Date()
+        }
+      ]);
+      return;
+    }
 
     setError('');
     const userMsgText = textToSend;
@@ -97,6 +128,10 @@ export function AIAssistant() {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    
+    // เพิ่มจำนวนการใช้งานขึ้น 1
+    const nextCount = requestCount + 1;
+    updateRequestCount(nextCount);
 
     try {
       // 1. ดึงข้อมูลแวดล้อม (Context) จากฐานข้อมูลเว็บของเรา
@@ -399,14 +434,14 @@ export function AIAssistant() {
         {/* ส่วนด้านล่างสุด: แผงชิปคำถามแนะนำ และ อินพุตสำหรับส่งข้อความ */}
         <div className="p-4 border-t border-slate-900 bg-slate-950/30 space-y-3.5">
           
-          {/* ชิปข้อแนะนำคำถามด่วน (Prompt Chips) - แสดงเฉพาะเมื่อ AI พร้อมตอบ */}
-          {!isLoading && messages.length > 0 && (
+          {/* ชิปข้อแนะนำคำถามด่วน (Prompt Chips) - แสดงเฉพาะเมื่อ AI พร้อมตอบ และลิมิตยังไม่เต็ม */}
+          {!isLoading && messages.length > 0 && requestCount < MAX_AI_REQUESTS && (
             <div className="flex flex-wrap gap-2">
               {suggestionChips.map((chip, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(chip.text)}
-                  className="text-[10px] md:text-xs font-semibold px-2.5 py-1.5 bg-[#0a0f1d] hover:bg-violet-950/30 border border-slate-850 hover:border-violet-500/20 text-slate-350 hover:text-violet-400 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                  className="text-[10px] md:text-xs font-semibold px-2.5 py-1.5 bg-[#0a0f1d] hover:bg-violet-950/30 border border-slate-850 hover:border-violet-500/20 text-slate-355 hover:text-violet-400 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
                 >
                   <Sparkles className="w-2.5 h-2.5 text-violet-500" />
                   <span>{chip.short}</span>
@@ -414,6 +449,31 @@ export function AIAssistant() {
               ))}
             </div>
           )}
+
+          {/* แถบลิมิตการใช้งาน AI */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold">
+              <span className="flex items-center space-x-1">
+                <Sparkles className="w-3 h-3 text-violet-400 animate-pulse" />
+                <span>โควตาการถาม AI ในเซสชันนี้</span>
+              </span>
+              <span className={requestCount >= MAX_AI_REQUESTS ? 'text-red-400 font-black' : 'text-slate-300'}>
+                {requestCount} / {MAX_AI_REQUESTS} ครั้ง
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-[#03060c] rounded-full overflow-hidden border border-slate-850">
+              <div 
+                className={`h-full transition-all duration-500 rounded-full bg-gradient-to-r ${
+                  requestCount >= MAX_AI_REQUESTS 
+                    ? 'from-red-500 to-pink-600 shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
+                    : requestCount >= MAX_AI_REQUESTS * 0.7 
+                    ? 'from-amber-500 to-orange-500' 
+                    : 'from-violet-500 to-cyan-500'
+                }`}
+                style={{ width: `${Math.min((requestCount / MAX_AI_REQUESTS) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
 
           {/* กล่องอินพุตสำหรับพิมพ์แชท */}
           <form 
@@ -428,15 +488,19 @@ export function AIAssistant() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="พิมพ์ถาม Gemma AI (เช่น แนะนำอนิเมะโรแมนติก)..."
-                disabled={isLoading}
+                placeholder={
+                  requestCount >= MAX_AI_REQUESTS
+                    ? "ถามครบโควตา 10 ครั้งแล้ว กรุณาล้างประวัติเพื่อรีเซ็ต..."
+                    : "พิมพ์ถาม Gemma AI (เช่น แนะนำอนิเมะโรแมนติก)..."
+                }
+                disabled={isLoading || requestCount >= MAX_AI_REQUESTS}
                 className="w-full bg-[#03060c] border border-slate-850 hover:border-slate-800 focus:border-violet-500 focus:outline-none rounded-2xl py-3.5 pl-4 pr-10 text-xs sm:text-sm text-slate-100 placeholder-slate-550 shadow-inner transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium"
               />
             </div>
             
             <button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || requestCount >= MAX_AI_REQUESTS}
               className="p-3.5 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 disabled:from-slate-900 disabled:to-slate-900 text-white rounded-2xl transition-all shadow-[0_4px_12px_rgba(139,92,246,0.15)] disabled:shadow-none hover:shadow-[0_8px_18px_rgba(139,92,246,0.25)] disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer active:scale-95 flex items-center justify-center"
             >
               <Send className="w-4 h-4" />
