@@ -10,7 +10,7 @@ import { SeasonalFilterSelector } from '@/components/SeasonalFilterSelector';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
 import { useSearchParams } from 'next/navigation';
-import { getLogoPath, translateGenreToEnglish } from '@/lib/basePath';
+import { getLogoPath, translateGenreToEnglish, hasThaiDub } from '@/lib/basePath';
 
 function SeasonalPageContent() {
   const searchParams = useSearchParams();
@@ -31,6 +31,7 @@ function SeasonalPageContent() {
   const currentGenre = searchParams.get('genre') || null;
   const currentSort = searchParams.get('sort') || 'POPULARITY_DESC';
   const searchQuery = searchParams.get('search') || null;
+  const thaiDubOnly = searchParams.get('thaiDub') === 'true';
 
   // ดึงประเภทอนิเมะทั้งหมดแบบไดนามิกจากฐานข้อมูล
   const dynamicGenres = getGenresList() || [];
@@ -93,7 +94,12 @@ function SeasonalPageContent() {
         });
 
         // ผสานข้อมูลเข้าด้วยกัน
-        const merged = [...filteredCustomAnime, ...apiAnimeList];
+        let merged = [...filteredCustomAnime, ...apiAnimeList];
+
+        // กรองอนิเมะที่เป็นพากย์ไทยเท่านั้นหากมีการเลือกตัวกรอง
+        if (thaiDubOnly) {
+          merged = merged.filter(anime => hasThaiDub(anime));
+        }
 
         // จัดเรียงผลลัพธ์แบบรวมตามการตั้งค่าของผู้ใช้
         if (currentSort === 'POPULARITY_DESC') {
@@ -113,7 +119,7 @@ function SeasonalPageContent() {
     }
 
     loadSeasonalData();
-  }, [currentSeason, currentYear, currentGenre, currentSort, searchQuery]);
+  }, [currentSeason, currentYear, currentGenre, currentSort, searchQuery, thaiDubOnly]);
 
   // แปลงชื่อซีซันเป็นภาษาไทยเพื่อการแสดงผลสวยงาม
   const getSeasonThai = (s: string) => {

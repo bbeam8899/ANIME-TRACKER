@@ -26,7 +26,8 @@ import { SearchBar } from '@/components/SearchBar';
 import { getCustomAnimeById } from '@/lib/db';
 import { BackButton } from '@/components/BackButton';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
-import { getLogoPath } from '@/lib/basePath';
+import { getLogoPath, hasThaiDub } from '@/lib/basePath';
+import { CharacterModal } from '@/components/CharacterModal';
 
 function AnimeDetailPageContent() {
   const searchParams = useSearchParams();
@@ -42,6 +43,8 @@ function AnimeDetailPageContent() {
   const [loading, setLoading] = useState(true);
   const [anime, setAnime] = useState<any>(null);
   const [isCustom, setIsCustom] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
+  const [isCharModalOpen, setIsCharModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadDetail() {
@@ -330,6 +333,11 @@ function AnimeDetailPageContent() {
 
             {/* Genres */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5">
+              {hasThaiDub(anime) && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-rose-500 via-violet-600 to-cyan-500 text-white rounded-full text-xs font-black shadow-[0_0_12px_rgba(139,92,246,0.5)] border border-white/20 select-none animate-pulse">
+                  ✨ พากย์ไทย (Thai Dub)
+                </span>
+              )}
               {anime.genres && anime.genres.map((genre: string, idx: number) => (
                 <GenreBadge key={`${genre}-${idx}`} genre={genre} />
               ))}
@@ -447,15 +455,20 @@ function AnimeDetailPageContent() {
                     return (
                       <div
                         key={`${char.id}-${idx}`}
-                        className="glass-panel p-3.5 rounded-2xl border border-slate-800 flex flex-col items-center text-center space-y-3 shadow-sm"
+                        onClick={() => {
+                          setSelectedCharacter(char);
+                          setIsCharModalOpen(true);
+                        }}
+                        className="glass-panel p-3.5 rounded-2xl border border-slate-800 flex flex-col items-center text-center space-y-3 shadow-sm cursor-pointer hover:border-violet-500 hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(139,92,246,0.25)] transition-all duration-300 group"
+                        title="คลิกเพื่อดูประวัติเจาะลึก"
                       >
                         {/* Avatar */}
-                        <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-950 border border-slate-800 flex-shrink-0">
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-950 border border-slate-800 flex-shrink-0 group-hover:border-violet-400 transition-colors">
                           {char.image?.large || char.image?.medium ? (
                             <img
                               src={char.image.large || char.image.medium}
                               alt={charName}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                               loading="lazy"
                             />
                           ) : (
@@ -465,8 +478,8 @@ function AnimeDetailPageContent() {
                           )}
                         </div>
                         {/* Info */}
-                        <div className="min-w-0">
-                          <h5 className="font-extrabold text-xs md:text-sm text-slate-200 truncate max-w-[150px]">
+                        <div className="min-w-0 w-full">
+                          <h5 className="font-extrabold text-xs md:text-sm text-slate-200 group-hover:text-violet-400 transition-colors truncate w-full px-1">
                             {charName}
                           </h5>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-1 ${
@@ -535,6 +548,23 @@ function AnimeDetailPageContent() {
           {/* Sidebar Info (Right 1 col) */}
           <div className="space-y-6">
             
+            {/* Thai Dub Availability Card */}
+            {hasThaiDub(anime) && (
+              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-emerald-950/20 p-5 shadow-[0_0_20px_rgba(16,185,129,0.15)] backdrop-blur-md">
+                {/* Glow decorations */}
+                <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/20 rounded-full blur-xl pointer-events-none animate-pulse" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 text-lg shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse flex-shrink-0">
+                    ✨
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm text-emerald-400">มีพากย์ไทยแล้ว!</h4>
+                    <p className="text-[11px] text-emerald-300/80 font-light mt-0.5 leading-normal">อนิเมะเรื่องนี้ได้รับการยืนยันว่ามีเสียงพากย์ภาษาไทยให้บริการ</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 🍿 ช่องทางการรับชม (Streaming Channels) */}
             <div className="glass-panel p-6 rounded-3xl border border-slate-800/85 space-y-4 relative overflow-hidden">
               {/* Glowing gradient border effect */}
@@ -741,6 +771,11 @@ function AnimeDetailPageContent() {
 
       </main>
 
+      <CharacterModal
+        character={selectedCharacter}
+        isOpen={isCharModalOpen}
+        onClose={() => setIsCharModalOpen(false)}
+      />
     </div>
   );
 }

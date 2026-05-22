@@ -241,6 +241,15 @@ const ANIME_DETAIL_QUERY = `
               large
               medium
             }
+            description
+            gender
+            age
+            bloodType
+            dateOfBirth {
+              year
+              month
+              day
+            }
           }
         }
       }

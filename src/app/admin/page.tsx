@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [popularity, setPopularity] = useState<number>(1500);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [newGenreInput, setNewGenreInput] = useState('');
+  const [hasThaiDub, setHasThaiDub] = useState(false);
 
   // UI Status
   const [validationError, setValidationError] = useState('');
@@ -112,6 +113,7 @@ export default function AdminPage() {
     setAverageScore(80);
     setPopularity(1500);
     setSelectedGenres([]);
+    setHasThaiDub(false);
     setIsEditing(false);
     setValidationError('');
   };
@@ -152,6 +154,7 @@ export default function AdminPage() {
       averageScore: Number(averageScore) || undefined,
       popularity: Number(popularity) || undefined,
       genres: selectedGenres,
+      hasThaiDub: hasThaiDub,
     };
 
     try {
@@ -183,6 +186,7 @@ export default function AdminPage() {
     setAverageScore(anime.averageScore || 80);
     setPopularity(anime.popularity || 1500);
     setSelectedGenres(anime.genres || []);
+    setHasThaiDub(anime.hasThaiDub || false);
     setIsEditing(true);
     setValidationError('');
     setSuccessMessage('');
@@ -515,6 +519,32 @@ export default function AdminPage() {
                       className="w-full bg-slate-950/80 border border-slate-800 focus:border-violet-500 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
                     />
                   </div>
+                </div>
+
+                {/* Thai Dub & Custom Metadata Row */}
+                <div className="p-4 bg-slate-950/40 border border-slate-900 rounded-2xl flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs md:text-sm font-bold text-slate-200 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      มีพากย์ไทย (Thai Dubbed) 🌈
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-light">ทำเครื่องหมายหากอนิเมะเรื่องนี้มีเสียงพากย์ไทยอย่างเป็นทางการ</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHasThaiDub(!hasThaiDub)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                      hasThaiDub
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                        : 'bg-slate-850'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                        hasThaiDub ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {/* Genres Section */}

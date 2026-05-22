@@ -149,6 +149,35 @@ export function SeasonalFilterSelector({
 
       </div>
 
+      {/* 3. Thai Dub Only Toggle */}
+      <div className="flex items-center justify-between p-3.5 bg-slate-900/40 border border-slate-800/80 rounded-2xl max-w-sm hover:border-violet-500/30 transition-all duration-300 shadow-sm">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs md:text-sm font-bold text-slate-200 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 animate-pulse" />
+            พากย์ไทยเท่านั้น (Thai Dub Only) 🌈
+          </span>
+          <span className="text-[10px] text-slate-400 font-light pr-4">กรองเฉพาะอนิเมะที่มีเสียงพากย์ไทยสำหรับคุณ</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const isDubOnly = searchParams.get('thaiDub') === 'true';
+            updateFilters({ thaiDub: isDubOnly ? null : 'true' });
+          }}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+            searchParams.get('thaiDub') === 'true'
+              ? 'bg-gradient-to-r from-violet-600 to-pink-600 shadow-[0_0_10px_rgba(139,92,246,0.4)]'
+              : 'bg-slate-800'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+              searchParams.get('thaiDub') === 'true' ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+
     </div>
   );
 }

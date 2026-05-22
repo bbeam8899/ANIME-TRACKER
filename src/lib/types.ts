@@ -35,6 +35,11 @@ export interface CharacterNode {
     medium?: string;
     large?: string;
   };
+  description?: string;
+  gender?: string;
+  age?: string;
+  bloodType?: string;
+  dateOfBirth?: FuzzyDate;
 }
 
 export interface CharacterEdge {
@@ -111,6 +116,7 @@ export interface AnimeMedia {
   startDate?: FuzzyDate;
   endDate?: FuzzyDate;
   externalLinks?: ExternalLink[];
+  hasThaiDub?: boolean;
 }
 
 

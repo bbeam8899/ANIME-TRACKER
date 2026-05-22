@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Star, Tv, Calendar } from 'lucide-react';
 import { AnimeMedia } from '@/lib/types';
 import { GenreBadge } from './ui/GenreBadge';
+import { hasThaiDub } from '@/lib/basePath';
 
 interface AnimeCardProps {
   media: AnimeMedia;
@@ -32,6 +33,13 @@ export function AnimeCard({ media }: AnimeCardProps) {
           ) : (
             <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-500">
               No Cover
+            </div>
+          )}
+
+          {/* Thai Dub Badge */}
+          {hasThaiDub(media) && (
+            <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-rose-500 via-violet-600 to-cyan-500 text-white px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-extrabold tracking-wide border border-white/20 shadow-[0_0_12px_rgba(139,92,246,0.6)] animate-pulse select-none z-10 flex items-center gap-0.5">
+              <span>พากย์ไทย</span>
             </div>
           )}
 

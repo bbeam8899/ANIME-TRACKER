@@ -54,6 +54,7 @@ export interface CustomAnime {
   startDate?: { year?: number; month?: number; day?: number };
   endDate?: { year?: number; month?: number; day?: number };
   isCustom?: boolean; // เพื่อบอกว่าเป็นข้อมูลที่เราสร้างเอง
+  hasThaiDub?: boolean;
 }
 
 export interface DBData {
