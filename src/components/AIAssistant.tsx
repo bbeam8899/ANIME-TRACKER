@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, Send, Sparkles, AlertCircle, RefreshCw, Trash2, ArrowLeftRight } from 'lucide-react';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { getTrendingAnime } from '@/lib/anilist';
+import { translateGenreToThai, translateGenreToEnglish } from '@/lib/basePath';
 
 interface ChatMessage {
   id: string;
@@ -136,14 +137,27 @@ export function AIAssistant() {
         
         // ดึงจาก Custom Anime
         if (matchedGenre) {
-          recommendations.push(...customAnime.filter(a => a.genres?.includes(matchedGenre)));
+          const matchedGenreTh = translateGenreToThai(matchedGenre);
+          const matchedGenreEn = translateGenreToEnglish(matchedGenre).toLowerCase();
+          recommendations.push(...customAnime.filter(a => 
+            a.genres?.some(g => 
+              g === matchedGenreTh || 
+              translateGenreToEnglish(g).toLowerCase() === matchedGenreEn
+            )
+          ));
         } else {
           recommendations.push(...customAnime);
         }
 
         // ดึงจาก Trending
         if (matchedGenre) {
-          recommendations.push(...trendingAnimeList.filter(a => a.genres?.includes(matchedGenre)));
+          const matchedGenreEn = translateGenreToEnglish(matchedGenre).toLowerCase();
+          recommendations.push(...trendingAnimeList.filter(a => 
+            a.genres?.some((g: string) => 
+              g.toLowerCase() === matchedGenreEn || 
+              translateGenreToEnglish(g).toLowerCase() === matchedGenreEn
+            )
+          ));
         } else {
           recommendations.push(...trendingAnimeList);
         }
@@ -152,7 +166,8 @@ export function AIAssistant() {
         recommendations = recommendations.slice(0, 3);
 
         if (recommendations.length > 0) {
-          aiResponse = `**ยินดีแนะนำเลยครับคุณผู้ดู!** 🌟 จากที่ผมตรวจสอบฐานข้อมูลของ **Anime Tracker** ในขณะนี้ สำหรับสไตล์ที่คุณต้องการ${matchedGenre ? ` (แนว **${matchedGenre}**)` : ''} เรื่องที่โดดเด่นน่าชมที่สุดมีดังนี้ครับ:\n\n`;
+          const displayMatchedGenre = translateGenreToThai(matchedGenre);
+          aiResponse = `**ยินดีแนะนำเลยครับคุณผู้ดู!** 🌟 จากที่ผมตรวจสอบฐานข้อมูลของ **Anime Tracker** ในขณะนี้ สำหรับสไตล์ที่คุณต้องการ${matchedGenre ? ` (แนว **${displayMatchedGenre}**)` : ''} เรื่องที่โดดเด่นน่าชมที่สุดมีดังนี้ครับ:\n\n`;
           
           recommendations.forEach((anime, index) => {
             const title = anime.title.english || anime.title.romaji || anime.title.native;
@@ -163,7 +178,8 @@ export function AIAssistant() {
             aiResponse += `**${index + 1}. ${title}** (${type})\n`;
             aiResponse += `> 📊 คะแนน: ${score} | ${status}\n`;
             if (anime.genres) {
-              aiResponse += `> 🏷️ ประเภท: ${anime.genres.slice(0, 3).join(', ')}\n`;
+              const thaiGenres = anime.genres.slice(0, 3).map((g: string) => translateGenreToThai(g));
+              aiResponse += `> 🏷️ ประเภท: ${thaiGenres.join(', ')}\n`;
             }
             if (anime.description) {
               // ลบแท็ก HTML เผื่อมี
@@ -173,7 +189,7 @@ export function AIAssistant() {
             aiResponse += `\n`;
           });
 
-          aiResponse += `คุณผู้ดูสามารถคลิกดูรายละเอียดเพิ่มเติม เรื่องย่อแบบเต็ม และช่องทางการรับชมสตรีมมิ่งถูกลิขสิทธิ์ได้ทันทีโดยการค้นหาชื่อเรื่องในช่องค้นหาด้านบน หรือกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อเปิดใช้งานตัวกรองแนว **"${matchedGenre || 'ทั้งหมด'}"** ได้ทันทีเลยครับ! มีอนิเมะเด็ด ๆ รอคุณอยู่อีกเพียบเลยครับ 🤖✨`;
+          aiResponse += `คุณผู้ดูสามารถคลิกดูรายละเอียดเพิ่มเติม เรื่องย่อแบบเต็ม และช่องทางการรับชมสตรีมมิ่งถูกลิขสิทธิ์ได้ทันทีโดยการค้นหาชื่อเรื่องในช่องค้นหาด้านบน หรือกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อเปิดใช้งานตัวกรองแนว **"${translateGenreToThai(matchedGenre) || 'ทั้งหมด'}"** ได้ทันทีเลยครับ! มีอนิเมะเด็ด ๆ รอคุณอยู่อีกเพียบเลยครับ 🤖✨`;
         } else {
           aiResponse = `**Gemma AI ยินดีช่วยเหลือครับ!** 🤖 ผมพยายามหาอนิเมะแนวที่คุณถามหา แต่ดูเหมือนในขณะนี้ฐานข้อมูลอาจมีแนวนี้อยู่น้อย\n\nแต่ผมขอแนะนำอนิเมะที่เป็นกระแสยอดฮิตที่สุดบนหน้าแรกให้ลองรับชมดูสักเรื่องนะครับ เช่น **"${trendingAnimeList[0]?.title?.english || 'อนิเมะยอดนิยม'}"** ซึ่งเป็นแนวยอดนิยมของซีซันนี้ครับ หรือลองกดเข้าไปที่หน้า **[ตัวกรองซีซัน](/seasonal)** เพื่อจัดลำดับตามคะแนนรีวิวสูงสุด (Sort: Popularity/Score) เพื่อค้นหาเรื่องอื่น ๆ ดูได้ง่าย ๆ เลยครับครับ!`;
         }

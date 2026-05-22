@@ -10,7 +10,7 @@ import { SeasonalFilterSelector } from '@/components/SeasonalFilterSelector';
 import { getCustomAnimeList, getGenresList } from '@/lib/db';
 import { AIAssistantButton } from '@/components/AIAssistantButton';
 import { useSearchParams } from 'next/navigation';
-import { getLogoPath } from '@/lib/basePath';
+import { getLogoPath, translateGenreToEnglish } from '@/lib/basePath';
 
 function SeasonalPageContent() {
   const searchParams = useSearchParams();
@@ -52,7 +52,7 @@ function SeasonalPageContent() {
         const pageData = await searchSeasonalAnime({
           season: currentSeason,
           seasonYear: currentYear,
-          genre: currentGenre,
+          genre: currentGenre ? translateGenreToEnglish(currentGenre) : null,
           search: searchQuery,
           sort: [currentSort],
           page: 1,
@@ -69,8 +69,13 @@ function SeasonalPageContent() {
             return false;
           }
           // กรองตามประเภท (Genre)
-          if (currentGenre && !anime.genres?.includes(currentGenre)) {
-            return false;
+          if (currentGenre) {
+            const currentGenreEn = translateGenreToEnglish(currentGenre).toLowerCase();
+            const hasGenre = anime.genres?.some(g => 
+              g === currentGenre || 
+              translateGenreToEnglish(g).toLowerCase() === currentGenreEn
+            );
+            if (!hasGenre) return false;
           }
           // กรองตามกล่องค้นหา (Search Query)
           if (searchQuery) {
@@ -110,9 +115,15 @@ function SeasonalPageContent() {
     loadSeasonalData();
   }, [currentSeason, currentYear, currentGenre, currentSort, searchQuery]);
 
-  // แปลงชื่อซีซันเพื่อการแสดงผลสวยงาม
-  const formatSeasonText = (s: string) => {
-    return s.charAt(0) + s.slice(1).toLowerCase();
+  // แปลงชื่อซีซันเป็นภาษาไทยเพื่อการแสดงผลสวยงาม
+  const getSeasonThai = (s: string) => {
+    switch (s) {
+      case 'WINTER': return 'ฤดูหนาว';
+      case 'SPRING': return 'ฤดูใบไม้ผลิ';
+      case 'SUMMER': return 'ฤดูร้อน';
+      case 'FALL': return 'ฤดูใบไม้ร่วง';
+      default: return s;
+    }
   };
 
   return (
@@ -205,7 +216,7 @@ function SeasonalPageContent() {
             <div className="flex items-center space-x-2 text-slate-200">
               <Sparkles className="w-5 h-5 text-pink-500 animate-pulse" />
               <h3 className="font-extrabold text-base md:text-lg">
-                ผลลัพธ์การค้นหา: {formatSeasonText(currentSeason)} {currentYear}
+                ผลลัพธ์การค้นหา: {getSeasonThai(currentSeason)} {currentYear}
                 {currentGenre && <span className="text-violet-400"> • แนว {currentGenre}</span>}
                 {searchQuery && <span className="text-cyan-400"> • ค้นหา "{searchQuery}"</span>}
               </h3>

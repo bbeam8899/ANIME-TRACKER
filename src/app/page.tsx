@@ -81,13 +81,22 @@ export default function HomePage() {
           (anime) => anime.season === currentSeason && anime.seasonYear === year
         );
 
+        const getSeasonThai = (s: string) => {
+          switch (s) {
+            case 'WINTER': return 'ฤดูหนาว';
+            case 'SPRING': return 'ฤดูใบไม้ผลิ';
+            case 'SUMMER': return 'ฤดูร้อน';
+            case 'FALL': return 'ฤดูใบไม้ร่วง';
+            default: return s;
+          }
+        };
+
         // ผสานข้อมูล Custom เข้ากับรายการจาก API
         const merged = [...currentSeasonCustom, ...(seasonalData || [])];
         setMergedSeasonalAnime(merged);
 
-        // ฟอร์แมตชื่อซีซันเป็นตัวพิมพ์แรกใหญ่
-        const formatted = currentSeason.charAt(0) + currentSeason.slice(1).toLowerCase();
-        setFormattedSeason(formatted);
+        // ฟอร์แมตชื่อซีซันเป็นภาษาไทย
+        setFormattedSeason(getSeasonThai(currentSeason));
       } catch (error) {
         console.error('Failed to load real-time homepage data:', error);
       } finally {
@@ -193,7 +202,7 @@ export default function HomePage() {
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-5 h-5 text-violet-500" />
                   <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight">
-                    Airing This Week <span className="text-xs md:text-sm font-semibold text-slate-400">(ตารางฉายสัปดาห์นี้)</span>
+                    ตารางออกอากาศสัปดาห์นี้ <span className="text-xs md:text-sm font-semibold text-slate-400">(Airing Schedule)</span>
                   </h2>
                 </div>
               </div>
@@ -206,7 +215,7 @@ export default function HomePage() {
                 <div className="flex items-center space-x-2">
                   <Flame className="w-5 h-5 text-pink-500 animate-pulse" />
                   <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight">
-                    Current Season Releases <span className="text-xs md:text-sm font-semibold text-slate-400">({formattedSeason} {currentYear})</span>
+                    อนิเมะออกใหม่ประจำซีซัน <span className="text-xs md:text-sm font-semibold text-slate-400">({formattedSeason} {currentYear})</span>
                   </h2>
                 </div>
                 <Link

@@ -1,4 +1,5 @@
 import React from 'react';
+import { translateGenreToThai, translateGenreToEnglish } from '@/lib/basePath';
 
 interface GenreBadgeProps {
   genre: string;
@@ -10,7 +11,10 @@ interface GenreBadgeProps {
  */
 export function GenreBadge({ genre }: GenreBadgeProps) {
   const getGenreStyles = (name: string): { bg: string; text: string; border: string } => {
-    const n = name.toLowerCase();
+    // แปลงเป็นภาษาอังกฤษเพื่อตรวจสอบประเภทและเลือกสไตล์สีที่ถูกต้อง
+    const englishGenre = translateGenreToEnglish(name);
+    const n = englishGenre.toLowerCase();
+    
     if (n === 'action' || n === 'martial arts') {
       return {
         bg: 'bg-red-950/40',
@@ -69,12 +73,14 @@ export function GenreBadge({ genre }: GenreBadgeProps) {
   };
 
   const styles = getGenreStyles(genre);
+  const displayGenre = translateGenreToThai(genre);
 
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide border transition-all duration-300 ${styles.bg} ${styles.text} ${styles.border}`}
     >
-      {genre}
+      {displayGenre}
     </span>
   );
 }
+

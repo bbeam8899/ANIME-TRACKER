@@ -129,6 +129,17 @@ function AnimeDetailPageContent() {
     }
   };
 
+  // แปลงชื่อซีซันเป็นภาษาไทย
+  const getSeasonThai = (s?: string) => {
+    switch (s) {
+      case 'WINTER': return 'ฤดูหนาว';
+      case 'SPRING': return 'ฤดูใบไม้ผลิ';
+      case 'SUMMER': return 'ฤดูร้อน';
+      case 'FALL': return 'ฤดูใบไม้ร่วง';
+      default: return 'ไม่ระบุ';
+    }
+  };
+
   // ฟอร์แมตต้นฉบับเป็นภาษาไทย
   const getSourceThai = (source?: string) => {
     switch (source) {
@@ -612,7 +623,7 @@ function AnimeDetailPageContent() {
                   <span className="text-slate-400">ซีซันเริ่มฉาย</span>
                   <span className="text-slate-200 flex items-center gap-1 font-bold">
                     <Calendar className="w-3.5 h-3.5 text-violet-400" />
-                    <span>{anime.season ? anime.season.charAt(0) + anime.season.slice(1).toLowerCase() : 'N/A'} {anime.seasonYear || ''}</span>
+                    <span>{getSeasonThai(anime.season)} {anime.seasonYear || ''}</span>
                   </span>
                 </div>
 

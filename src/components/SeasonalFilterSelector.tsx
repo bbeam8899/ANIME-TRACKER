@@ -13,10 +13,10 @@ interface SeasonalFilterSelectorProps {
 }
 
 const SEASONS = [
-  { value: 'WINTER', label: 'Winter ❄️', color: 'hover:border-cyan-500 hover:text-cyan-400' },
-  { value: 'SPRING', label: 'Spring 🌸', color: 'hover:border-pink-500 hover:text-pink-400' },
-  { value: 'SUMMER', label: 'Summer ☀️', color: 'hover:border-amber-500 hover:text-amber-400' },
-  { value: 'FALL', label: 'Fall 🍂', color: 'hover:border-orange-500 hover:text-orange-400' },
+  { value: 'WINTER', label: 'ฤดูหนาว ❄️', color: 'hover:border-cyan-500 hover:text-cyan-400' },
+  { value: 'SPRING', label: 'ฤดูใบไม้ผลิ 🌸', color: 'hover:border-pink-500 hover:text-pink-400' },
+  { value: 'SUMMER', label: 'ฤดูร้อน ☀️', color: 'hover:border-amber-500 hover:text-amber-400' },
+  { value: 'FALL', label: 'ฤดูใบไม้ร่วง 🍂', color: 'hover:border-orange-500 hover:text-orange-400' },
 ];
 
 const SORT_OPTIONS = [

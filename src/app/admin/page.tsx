@@ -31,9 +31,11 @@ import {
 import { getLogoPath } from '@/lib/basePath';
 
 const PRESETS_GENRES = [
-  "Action", "Adventure", "Comedy", "Drama", "Fantasy", 
-  "Mystery", "Psychological", "Romance", "Sci-Fi", 
-  "Slice of Life", "Supernatural", "Thriller"
+  "แอคชัน", "ผจญภัย", "ตลก", "ดราม่า", "แฟนตาซี", 
+  "ลึกลับ", "จิตวิทยา", "โรแมนติก", "ไซไฟ", 
+  "ชีวิตประจำวัน", "เหนือธรรมชาติ", "ระทึกขวัญ",
+  "สยองขวัญ", "ดนตรี", "หุ่นยนต์", "กีฬา", 
+  "สาวน้อยเวทมนตร์", "วาบหวาม"
 ];
 
 export default function AdminPage() {
@@ -231,6 +233,17 @@ export default function AdminPage() {
     document.body.removeChild(element);
   };
 
+  const getSeasonThai = (s?: string) => {
+    if (!s) return '';
+    switch (s.toUpperCase()) {
+      case 'WINTER': return 'ฤดูหนาว';
+      case 'SPRING': return 'ฤดูใบไม้ผลิ';
+      case 'SUMMER': return 'ฤดูร้อน';
+      case 'FALL': return 'ฤดูใบไม้ร่วง';
+      default: return s;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-anime-bg text-slate-100 flex flex-col selection:bg-violet-600 selection:text-white pb-20">
       
@@ -421,10 +434,10 @@ export default function AdminPage() {
                       onChange={(e) => setSeason(e.target.value as any)}
                       className="w-full bg-slate-950/80 border border-slate-800 focus:border-violet-500 rounded-xl px-3 py-3 text-sm text-white outline-none transition-colors"
                     >
-                      <option value="WINTER">Winter (ม.ค.-มี.ค.)</option>
-                      <option value="SPRING">Spring (เม.ย.-มิ.ย.)</option>
-                      <option value="SUMMER">Summer (ก.ค.-ก.ย.)</option>
-                      <option value="FALL">Fall (ต.ค.-ธ.ค.)</option>
+                      <option value="WINTER">ฤดูหนาว (ม.ค. - มี.ค.)</option>
+                      <option value="SPRING">ฤดูใบไม้ผลิ (เม.ย. - มิ.ย.)</option>
+                      <option value="SUMMER">ฤดูร้อน (ก.ค. - ก.ย.)</option>
+                      <option value="FALL">ฤดูใบไม้ร่วง (ต.ค. - ธ.ค.)</option>
                     </select>
                   </div>
 
@@ -451,11 +464,11 @@ export default function AdminPage() {
                       onChange={(e) => setStatus(e.target.value as any)}
                       className="w-full bg-slate-950/80 border border-slate-800 focus:border-violet-500 rounded-xl px-3 py-3 text-sm text-white outline-none transition-colors"
                     >
-                      <option value="FINISHED">FINISHED</option>
-                      <option value="RELEASING">RELEASING</option>
-                      <option value="NOT_YET_RELEASED">NOT_YET</option>
-                      <option value="CANCELLED">CANCELLED</option>
-                      <option value="HIATUS">HIATUS</option>
+                      <option value="FINISHED">ฉายเสร็จสิ้น (FINISHED)</option>
+                      <option value="RELEASING">กำลังฉายอยู่ (RELEASING)</option>
+                      <option value="NOT_YET_RELEASED">ยังไม่ฉาย (NOT YET RELEASED)</option>
+                      <option value="CANCELLED">ยกเลิกฉาย (CANCELLED)</option>
+                      <option value="HIATUS">หยุดพักชั่วคราว (HIATUS)</option>
                     </select>
                   </div>
 
@@ -746,7 +759,7 @@ export default function AdminPage() {
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className="text-[9px] font-bold bg-violet-950/50 text-violet-400 px-2 py-0.5 rounded border border-violet-500/20 flex items-center space-x-0.5">
                           <Calendar className="w-2 h-2" />
-                          <span>{anime.season} {anime.seasonYear}</span>
+                          <span>{getSeasonThai(anime.season)} {anime.seasonYear}</span>
                         </span>
                         
                         {anime.averageScore && (
