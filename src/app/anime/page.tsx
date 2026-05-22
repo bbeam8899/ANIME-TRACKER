@@ -211,7 +211,7 @@ function AnimeDetailPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-anime-bg text-slate-100 flex flex-col selection:bg-violet-600 selection:text-white pb-20">
+    <div className="min-h-screen bg-anime-bg text-slate-100 flex flex-col selection:bg-violet-600 selection:text-white">
       {/* 1. Header / Navigation */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-900 bg-anime-bg/85 backdrop-blur-md px-4 md:px-12 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -233,7 +233,7 @@ function AnimeDetailPageContent() {
             <div className="flex items-center space-x-2 md:hidden">
               <Link
                 href="/seasonal"
-                className="flex items-center space-x-1 text-xs font-bold bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-slate-300"
+                className="flex items-center space-x-1 text-[11px] font-bold bg-slate-900 border border-slate-800 px-2.5 py-2 rounded-xl text-slate-300 active:scale-95 transition-all"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>ตัวกรองซีซัน</span>
@@ -259,6 +259,7 @@ function AnimeDetailPageContent() {
               </Link>
             </nav>
             <div className="border-l border-slate-800 h-6 mx-1" />
+
             <AIAssistantButton />
           </div>
         </div>
@@ -772,11 +773,14 @@ function AnimeDetailPageContent() {
       </main>
 
       {/* 4. Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 mt-12 py-10 px-4 md:px-12 text-center text-xs text-slate-500 font-medium w-full">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <p>© 2026 Anime Tracker & Seasonal Tracker. พัฒนาด้วย Next.js 16, TypeScript และ Tailwind CSS 4 🎮</p>
+      <footer className="relative border-t border-slate-900/80 bg-slate-950/80 backdrop-blur-md mt-16 py-10 px-4 md:px-12 text-center text-xs text-slate-400 font-medium w-full overflow-hidden">
+        {/* Top glowing neon border line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-violet-500/20 via-pink-500/30 to-cyan-500/20" />
+        
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+          <p className="text-slate-300">© 2026 Anime Tracker & Seasonal Tracker. พัฒนาด้วย Next.js 16, TypeScript และ Tailwind CSS 4 🎮</p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <p className="opacity-70">ดึงข้อมูลลิขสิทธิ์ถูกต้องเรียลไทม์ผ่าน <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="hover:text-violet-400 underline">AniList API v2</a></p>
+            <p className="text-slate-400">ดึงข้อมูลลิขสิทธิ์ถูกต้องเรียลไทม์ผ่าน <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 transition-colors font-semibold underline decoration-violet-500/30 hover:decoration-violet-400">AniList API v2</a></p>
           </div>
         </div>
       </footer>
